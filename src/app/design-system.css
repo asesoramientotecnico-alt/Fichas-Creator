@@ -4,10 +4,7 @@
    Source: Famiq Manual de Marca (17pp, official).
    ============================================================ */
 
-/* Roboto + Roboto Condensed from Google Fonts.
-   If you need offline/local fonts, drop .woff2 files into /fonts and
-   replace this @import with @font-face declarations. */
-@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,300;1,400&family=Roboto+Condensed:wght@400;700&display=swap');
+/* Fuentes: ver fuentes.css — woff2 locales, sin CDN (CLAUDE.md §3). */
 
 :root {
   /* ----------------------------------------------------------

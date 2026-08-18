@@ -45,3 +45,6 @@ coverage/
 
 # TypeScript
 *.tsbuildinfo
+
+# Capturas de control de fidelidad (regenerables)
+/capturas/

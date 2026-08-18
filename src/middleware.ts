@@ -36,7 +36,11 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const ruta = request.nextUrl.pathname;
-  const esRutaPublica = ruta.startsWith("/login") || ruta.startsWith("/auth");
+  const esRutaPublica =
+    ruta.startsWith("/login") ||
+    ruta.startsWith("/auth") ||
+    // Pantalla de control de fidelidad de M2. Datos hardcodeados, sin DB.
+    ruta.startsWith("/vista-previa");
 
   if (!user && !esRutaPublica) {
     const url = request.nextUrl.clone();
