@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="../../_ds/famiq-design-system-3b826536-054f-4fcd-bfa6-13947d850fe2/colors_and_type.css">
+<script src="../../_ds/famiq-design-system-3b826536-054f-4fcd-bfa6-13947d850fe2/_ds_bundle.js"></script>
+<script src="./doc-page.js"></script>
+<style>
+doc-page:not(:defined){visibility:hidden}
+body{margin:0}
+a{color:var(--famiq-red);text-decoration:none}
+a:hover{color:var(--famiq-red-dark)}
+</style>
+</helmet>
+<doc-page size="a4">
+  <section class="page" data-screen-label="01" style="box-sizing:border-box;padding:12mm 13mm 9mm;font-family:var(--font-sans);color:var(--famiq-graphite);background:#fff">
+    <div style="display:flex;flex-direction:column;height:100%">
+
+      <header style="display:flex;align-items:center;justify-content:space-between;gap:10mm;padding-bottom:2mm">
+        <img src="./assets/logo-famiq.png" alt="Famiq — Aceros inoxidables" style="width:36mm;height:auto;display:block">
+        <div style="display:flex;align-items:baseline;gap:4mm">
+          <span style="font-family:var(--font-condensed);font-weight:700;font-size:10pt;letter-spacing:.22em;text-transform:uppercase;color:var(--famiq-red)">Ficha técnica</span>
+          <span style="font-family:var(--font-condensed);font-size:8.5pt;letter-spacing:.12em;text-transform:uppercase;color:var(--famiq-grey-400)">{{ codigo }} · {{ revision }}</span>
+        </div>
+      </header>
+      <div style="display:flex;height:3px">
+        <div style="width:36mm;background:var(--famiq-red)"></div>
+        <div style="flex:1;background:var(--famiq-grey-200)"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 40mm;gap:8mm;padding-top:5mm;align-items:center">
+        <div>
+          <div style="display:flex;align-items:baseline;gap:4mm;flex-wrap:wrap">
+            <span style="font-family:var(--font-condensed);font-weight:700;font-size:9pt;letter-spacing:.18em;text-transform:uppercase;color:var(--famiq-red)">{{ subfamilia }}</span>
+            <span style="font-family:var(--font-condensed);font-weight:700;font-size:8.5pt;letter-spacing:.18em;text-transform:uppercase;color:var(--famiq-grey-400)">{{ familia }}</span>
+          </div>
+          <h1 style="font-family:var(--font-condensed);font-weight:700;font-size:29pt;line-height:1.02;letter-spacing:-.015em;margin:2.5mm 0 0;color:var(--famiq-graphite);text-wrap:balance">{{ nombre }}</h1>
+          <div style="font-family:var(--font-sans);font-weight:300;font-style:italic;font-size:11.5pt;color:var(--famiq-grey-500);margin-top:1.5mm">{{ nombreEn }}</div>
+        </div>
+        <sc-if value="{{ mostrarFoto }}" hint-placeholder-val="{{ true }}">
+          <div style="border:1px solid var(--famiq-grey-200);background:var(--famiq-grey-50);aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;padding:4mm">
+            <img src="./assets/producto.png" alt="{{ nombre }}" style="max-width:100%;max-height:100%;object-fit:contain;display:block">
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:9mm;row-gap:7mm;padding-top:7mm;flex:1;align-content:space-between">
+
+        <div>
+          <div style="border-top:2px solid var(--famiq-graphite);padding-top:2mm;font-family:var(--font-condensed);font-weight:700;font-size:9pt;letter-spacing:.2em;text-transform:uppercase">Normas aplicables</div>
+          <sc-for list="{{ normas }}" as="fila" hint-placeholder-count="7">
+            <div style="display:grid;grid-template-columns:33mm 1fr;gap:3mm;padding:1.8mm 0;border-bottom:1px solid var(--famiq-grey-200);align-items:baseline">
+              <span style="font-family:var(--font-condensed);font-size:8pt;letter-spacing:.12em;text-transform:uppercase;color:var(--famiq-grey-500);line-height:1.3">{{ fila.label }}</span>
+              <span style="font-family:var(--font-sans);font-weight:500;font-size:9pt;line-height:1.35">{{ fila.value }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div>
+          <div style="border-top:2px solid var(--famiq-graphite);padding-top:2mm;font-family:var(--font-condensed);font-weight:700;font-size:9pt;letter-spacing:.2em;text-transform:uppercase">Descripción</div>
+          <sc-for list="{{ descripcion }}" as="p" hint-placeholder-count="3">
+            <p style="font-family:var(--font-sans);font-size:9pt;line-height:1.5;margin:2.5mm 0 0;color:var(--famiq-graphite);text-wrap:pretty">{{ p }}</p>
+          </sc-for>
+        </div>
+
+        <div>
+          <div style="border-top:2px solid var(--famiq-graphite);padding-top:2mm;font-family:var(--font-condensed);font-weight:700;font-size:9pt;letter-spacing:.2em;text-transform:uppercase">Propiedades mecánicas</div>
+          <table style="width:100%;border-collapse:collapse;margin-top:2.5mm;font-variant-numeric:tabular-nums;table-layout:auto">
+            <thead>
+              <tr style="background:var(--famiq-graphite);color:#fff">
+                <th style="text-align:left;padding:1.6mm 2mm;font-family:var(--font-condensed);font-weight:700;font-size:7.5pt;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">Grado</th>
+                <th style="text-align:right;padding:1.6mm 2mm;font-family:var(--font-condensed);font-weight:700;font-size:7.5pt;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">Proof MPa</th>
+                <th style="text-align:right;padding:1.6mm 2mm;font-family:var(--font-condensed);font-weight:700;font-size:7.5pt;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">Rm mín MPa</th>
+                <th style="text-align:right;padding:1.6mm 2mm;font-family:var(--font-condensed);font-weight:700;font-size:7.5pt;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">Dureza máx</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ mecanicas }}" as="m" hint-placeholder-count="2">
+                <tr style="border-bottom:1px solid var(--famiq-grey-200)">
+                  <td style="padding:1.7mm 2mm;font-family:var(--font-sans);font-weight:500;font-size:9pt;white-space:nowrap">{{ m.grado }}</td>
+                  <td style="padding:1.7mm 2mm;text-align:right;font-family:var(--font-condensed);font-size:9.5pt">{{ m.proof }}</td>
+                  <td style="padding:1.7mm 2mm;text-align:right;font-family:var(--font-condensed);font-size:9.5pt">{{ m.rm }}</td>
+                  <td style="padding:1.7mm 2mm;text-align:right;font-family:var(--font-condensed);font-size:9.5pt;white-space:nowrap">{{ m.dureza }}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+
+        <div>
+          <div style="border-top:2px solid var(--famiq-graphite);padding-top:2mm;font-family:var(--font-condensed);font-weight:700;font-size:9pt;letter-spacing:.2em;text-transform:uppercase">Aplicaciones típicas</div>
+          <div style="display:flex;flex-wrap:wrap;gap:2mm;padding-top:3mm">
+            <sc-for list="{{ aplicaciones }}" as="app" hint-placeholder-count="6">
+              <span style="border:1px solid var(--famiq-grey-200);background:var(--famiq-grey-50);border-radius:2px;padding:1.4mm 2.5mm;font-family:var(--font-sans);font-size:8.5pt;font-weight:500;color:var(--famiq-graphite)">{{ app }}</span>
+            </sc-for>
+          </div>
+        </div>
+
+        <div>
+          <div style="border-top:2px solid var(--famiq-graphite);padding-top:2mm;font-family:var(--font-condensed);font-weight:700;font-size:9pt;letter-spacing:.2em;text-transform:uppercase">Materiales disponibles</div>
+          <div style="font-family:var(--font-sans);font-weight:500;font-size:9.5pt;line-height:1.45;padding-top:2.5mm">{{ materiales }}</div>
+        </div>
+
+        <div>
+          <div style="border-top:2px solid var(--famiq-graphite);padding-top:2mm;font-family:var(--font-condensed);font-weight:700;font-size:9pt;letter-spacing:.2em;text-transform:uppercase">Condiciones de servicio</div>
+          <p style="font-family:var(--font-sans);font-size:9pt;line-height:1.5;margin:2.5mm 0 0">{{ servicio }}</p>
+        </div>
+      </div>
+
+      <footer style="margin-top:6mm;display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--famiq-grey-200);padding-top:2.5mm">
+        <span style="font-family:var(--font-sans);font-size:7.5pt;color:var(--famiq-grey-400)">{{ nota }}</span>
+        <span style="font-family:var(--font-condensed);font-size:8pt;letter-spacing:.1em;color:var(--famiq-grey-400)">1 / 2</span>
+      </footer>
+    </div>
+  </section>
+
+  <section class="page" data-screen-label="02" style="box-sizing:border-box;padding:12mm 13mm 9mm;font-family:var(--font-sans);color:var(--famiq-graphite);background:#fff">
+    <div style="display:flex;flex-direction:column;height:100%">
+
+      <header style="display:flex;align-items:center;justify-content:space-between;gap:10mm;padding-bottom:2mm">
+        <div style="display:flex;align-items:baseline;gap:4mm;flex-wrap:wrap">
+          <span style="font-family:var(--font-condensed);font-weight:700;font-size:15pt;letter-spacing:.01em">Tabla de cotas y dimensiones</span>
+          <span style="font-family:var(--font-condensed);font-weight:700;font-size:9pt;letter-spacing:.18em;text-transform:uppercase;color:var(--famiq-red)">{{ nombre }}</span>
+        </div>
+        <img src="./assets/logo-famiq.png" alt="Famiq" style="width:26mm;height:auto;display:block">
+      </header>
+      <div style="display:flex;height:3px">
+        <div style="flex:1;background:var(--famiq-grey-200)"></div>
+        <div style="width:26mm;background:var(--famiq-red)"></div>
+      </div>
+
+      <sc-if value="{{ mostrarCroquis }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:1fr 52mm;gap:8mm;align-items:center;padding-top:6mm">
+          <div style="border:1px solid var(--famiq-grey-200);background:var(--famiq-grey-50);padding:4mm;display:flex;align-items:center;justify-content:center">
+            <img src="./assets/croquis.png" alt="Croquis dimensional" style="width:100%;max-height:60mm;object-fit:contain;display:block">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:2.5mm">
+            <sc-for list="{{ cotas }}" as="c" hint-placeholder-count="3">
+              <div style="display:grid;grid-template-columns:7mm 1fr;gap:2mm;align-items:baseline;border-bottom:1px solid var(--famiq-grey-200);padding-bottom:1.5mm">
+                <span style="font-family:var(--font-sans);font-weight:700;font-style:italic;font-size:11pt;color:var(--famiq-red)">{{ c.simbolo }}</span>
+                <span style="font-family:var(--font-sans);font-size:9pt;line-height:1.4">{{ c.nombre }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9mm;padding-top:7mm;align-items:start">
+        <sc-if value="{{ mostrarMetrico }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="border-top:2px solid var(--famiq-graphite);padding-top:2mm;display:flex;justify-content:space-between;align-items:baseline">
+              <span style="font-family:var(--font-condensed);font-weight:700;font-size:9pt;letter-spacing:.2em;text-transform:uppercase">Dimensiones métricas</span>
+              <span style="font-family:var(--font-condensed);font-size:8pt;letter-spacing:.1em;color:var(--famiq-grey-400)">mm</span>
+            </div>
+            <table style="width:100%;border-collapse:collapse;margin-top:2.5mm;font-variant-numeric:tabular-nums">
+              <thead>
+                <tr style="background:var(--famiq-graphite);color:#fff">
+                  <th style="text-align:left;padding:1.6mm 2mm;font-family:var(--font-condensed);font-weight:700;font-size:7.5pt;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">Nominal (d)</th>
+                  <th style="text-align:right;padding:1.6mm 2mm;font-family:var(--font-condensed);font-weight:700;font-size:7.5pt;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">Entre caras (s)</th>
+                  <th style="text-align:right;padding:1.6mm 2mm;font-family:var(--font-condensed);font-weight:700;font-size:7.5pt;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">Altura (h)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ dimsMetricas }}" as="r" hint-placeholder-count="13">
+                  <tr style="border-bottom:1px solid var(--famiq-grey-200)">
+                    <td style="padding:1.5mm 2mm;font-family:var(--font-sans);font-weight:500;font-size:9pt;white-space:nowrap">{{ r.d }}</td>
+                    <td style="padding:1.5mm 2mm;text-align:right;font-family:var(--font-condensed);font-size:9.5pt">{{ r.s }}</td>
+                    <td style="padding:1.5mm 2mm;text-align:right;font-family:var(--font-condensed);font-size:9.5pt">{{ r.h }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ mostrarPulgadas }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="border-top:2px solid var(--famiq-graphite);padding-top:2mm;display:flex;justify-content:space-between;align-items:baseline">
+              <span style="font-family:var(--font-condensed);font-weight:700;font-size:9pt;letter-spacing:.2em;text-transform:uppercase">Dimensiones pulgadas</span>
+              <span style="font-family:var(--font-condensed);font-size:8pt;letter-spacing:.1em;color:var(--famiq-grey-400)">mm</span>
+            </div>
+            <table style="width:100%;border-collapse:collapse;margin-top:2.5mm;font-variant-numeric:tabular-nums">
+              <thead>
+                <tr style="background:var(--famiq-graphite);color:#fff">
+                  <th style="text-align:left;padding:1.6mm 2mm;font-family:var(--font-condensed);font-weight:700;font-size:7.5pt;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">Nominal (d)</th>
+                  <th style="text-align:right;padding:1.6mm 2mm;font-family:var(--font-condensed);font-weight:700;font-size:7.5pt;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">Entre caras (s)</th>
+                  <th style="text-align:right;padding:1.6mm 2mm;font-family:var(--font-condensed);font-weight:700;font-size:7.5pt;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">Altura total (h)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ dimsPulgadas }}" as="r" hint-placeholder-count="10">
+                  <tr style="border-bottom:1px solid var(--famiq-grey-200)">
+                    <td style="padding:1.5mm 2mm;font-family:var(--font-sans);font-weight:500;font-size:9pt;white-space:nowrap">{{ r.d }}</td>
+                    <td style="padding:1.5mm 2mm;text-align:right;font-family:var(--font-condensed);font-size:9.5pt">{{ r.s }}</td>
+                    <td style="padding:1.5mm 2mm;text-align:right;font-family:var(--font-condensed);font-size:9.5pt">{{ r.h }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="margin-top:auto;padding-top:7mm">
+        <div style="border-top:2px solid var(--famiq-graphite);padding-top:2mm;font-family:var(--font-condensed);font-weight:700;font-size:9pt;letter-spacing:.2em;text-transform:uppercase">Presentación</div>
+        <div style="font-family:var(--font-sans);font-weight:500;font-size:9.5pt;padding-top:2.5mm">{{ presentacion }}</div>
+      </div>
+
+      <footer style="margin-top:6mm;display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--famiq-grey-200);padding-top:2.5mm">
+        <span style="font-family:var(--font-sans);font-size:7.5pt;color:var(--famiq-grey-400)">{{ nota }}</span>
+        <span style="font-family:var(--font-condensed);font-size:8pt;letter-spacing:.1em;color:var(--famiq-grey-400)">2 / 2</span>
+      </footer>
+    </div>
+  </section>
+</doc-page>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;familia&quot;: {&quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;Tuercas de acero inoxidable&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Identificación&quot;},
+  &quot;subfamilia&quot;: {&quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;Tuerca hexagonal&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Identificación&quot;},
+  &quot;nombre&quot;: {&quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;Tuerca autofrenante con inserto de nylon&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Identificación&quot;},
+  &quot;nombreEn&quot;: {&quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;Nylon Insert Lock Nut · Hex Nut&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Identificación&quot;},
+  &quot;codigo&quot;: {&quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;FT&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Identificación&quot;},
+  &quot;revision&quot;: {&quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;Rev. 01 · 2026&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Identificación&quot;},
+  &quot;sistema&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;Ambos&quot;, &quot;Métrico&quot;, &quot;Pulgadas&quot;], &quot;default&quot;: &quot;Ambos&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Contenido&quot;},
+  &quot;mostrarFoto&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Contenido&quot;},
+  &quot;mostrarCroquis&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Contenido&quot;},
+  &quot;materiales&quot;: {&quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;A2 — AISI 304/304L · A4 — AISI 316/316L&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Contenido&quot;},
+  &quot;servicio&quot;: {&quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;Autofrenante por deformación elástica del nylon · No reutilizable en aplicaciones críticas.&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Contenido&quot;},
+  &quot;presentacion&quot;: {&quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;Pack 1 (20 un.) · Pack 2 (50 un.) · Pack 3 (100 un.)&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Contenido&quot;},
+  &quot;nota&quot;: {&quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;Datos orientativos. Confirmar disponibilidad con equipo técnico · famiq.com.ar&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Pie&quot;}
+}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const sistema = p.sistema ?? "Ambos";
+    return {
+      familia: p.familia ?? "Tuercas de acero inoxidable",
+      subfamilia: p.subfamilia ?? "Tuerca hexagonal",
+      nombre: p.nombre ?? "Tuerca autofrenante con inserto de nylon",
+      nombreEn: p.nombreEn ?? "Nylon Insert Lock Nut · Hex Nut",
+      codigo: p.codigo ?? "FT",
+      revision: p.revision ?? "Rev. 01 · 2026",
+      nota: p.nota ?? "Datos orientativos. Confirmar disponibilidad con equipo técnico · famiq.com.ar",
+      materiales: p.materiales ?? "A2 — AISI 304/304L · A4 — AISI 316/316L",
+      servicio: p.servicio ?? "Autofrenante por deformación elástica del nylon · No reutilizable en aplicaciones críticas.",
+      presentacion: p.presentacion ?? "Pack 1 (20 un.) · Pack 2 (50 un.) · Pack 3 (100 un.)",
+      mostrarFoto: p.mostrarFoto ?? true,
+      mostrarCroquis: p.mostrarCroquis ?? true,
+      mostrarMetrico: sistema !== "Pulgadas",
+      mostrarPulgadas: sistema !== "Métrico",
+      normas: [
+        { label: "Métrico · M", value: "DIN 985" },
+        { label: "Pulgadas · ″", value: "ASME B18.16.6 · ASTM F594" },
+        { label: "Norma dimensional M", value: "DIN 985 / ISO 7042" },
+        { label: "Norma dimensional ″", value: "ASME B18.16.6" },
+        { label: "Norma material M", value: "EN ISO 3506-2 (cuerpo) + PA6" },
+        { label: "Norma material ″", value: "ASTM F594" },
+        { label: "Clase de resistencia", value: "Cuerpo A2/A4 inox + inserto nylon PA6 (T máx inserto: +120 °C)" }
+      ],
+      mecanicas: [
+        { grado: "A2-70 (304)", proof: "450", rm: "700", dureza: "223 HV" },
+        { grado: "A4-80 (316)", proof: "600", rm: "800", dureza: "250 HV" }
+      ],
+      descripcion: [
+        "Las tuercas autofrenantes rosca whitworth de acero inoxidable son fabricadas bajo norma ANSI B18.16.6 - ASTM F594 en calidad AISI 304 «A2» y AISI 316 «A4». Los diámetros varían desde 1/8\" a 1\".",
+        "Las tuercas autofrenantes rosca métrica de acero inoxidable son fabricadas bajo norma DIN 985 en calidad AISI 304 «A2» y AISI 316 «A4». Los diámetros varían desde M3 a M24.",
+        "Son utilizadas como tuercas de seguridad y en aplicaciones con vibración."
+      ],
+      aplicaciones: ["Uso general", "Estructuras", "Oil & Gas", "Bridas", "Equipos presión", "Ind. alimentaria"],
+      cotas: [
+        { simbolo: "d", nombre: "Diámetro nominal" },
+        { simbolo: "s", nombre: "Entre caras" },
+        { simbolo: "h", nombre: "Altura total" }
+      ],
+      dimsMetricas: [
+        { d: "M3", s: "5,5", h: "4" }, { d: "M4", s: "7", h: "5" }, { d: "M5", s: "8", h: "5" },
+        { d: "M6", s: "10", h: "6" }, { d: "M8", s: "13", h: "8" }, { d: "M10", s: "17", h: "10" },
+        { d: "M12", s: "19", h: "12" }, { d: "M14", s: "22", h: "14" }, { d: "M16", s: "24", h: "16" },
+        { d: "M18", s: "27", h: "18,5" }, { d: "M20", s: "30", h: "20" }, { d: "M22", s: "32", h: "22" },
+        { d: "M24", s: "36", h: "24" }
+      ],
+      dimsPulgadas: [
+        { d: "1/4\"", s: "11,2", h: "8,3" }, { d: "5/16\"", s: "12,8", h: "9,1" },
+        { d: "3/8\"", s: "14,3", h: "11,9" }, { d: "7/16\"", s: "15,9", h: "11,9" },
+        { d: "1/2\"", s: "19,1", h: "15,5" }, { d: "9/16\"", s: "22,3", h: "16,7" },
+        { d: "5/8\"", s: "23,9", h: "19,4" }, { d: "3/4\"", s: "27,0", h: "22,6" },
+        { d: "7/8\"", s: "31,8", h: "25,4" }, { d: "1\"", s: "36,6", h: "27,4" }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
