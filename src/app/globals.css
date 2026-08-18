@@ -1,0 +1,245 @@
+/* Chrome de la app. La ficha tiene su propio CSS y no se mezcla (§2, §3). */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--famiq-grey-50);
+  color: var(--fg-1);
+  font-family: var(--font-sans);
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--fg-link);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--famiq-red-dark);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-4) var(--space-6);
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--border-1);
+}
+
+.app-header .marca {
+  font-family: var(--font-condensed);
+  font-weight: var(--weight-bold);
+  font-size: var(--fs-h4);
+  letter-spacing: var(--tracking-snug);
+}
+.app-header .marca span {
+  color: var(--famiq-red);
+}
+
+.app-nav {
+  display: flex;
+  gap: var(--space-5);
+  font-family: var(--font-condensed);
+  font-weight: var(--weight-bold);
+  font-size: var(--fs-micro);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+}
+.app-nav a {
+  color: var(--fg-3);
+}
+.app-nav a:hover,
+.app-nav a[data-activo="true"] {
+  color: var(--famiq-red);
+}
+
+.app-main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--max-content);
+  margin: 0 auto;
+  padding: var(--space-6);
+}
+
+.titulo-pagina {
+  font-family: var(--font-condensed);
+  font-weight: var(--weight-bold);
+  font-size: var(--fs-h3);
+  letter-spacing: var(--tracking-snug);
+  margin: 0 0 var(--space-5);
+}
+
+.eyebrow {
+  font-family: var(--font-condensed);
+  font-weight: var(--weight-bold);
+  font-size: var(--fs-eyebrow);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+  color: var(--famiq-red);
+}
+
+/* Tabla de listados */
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-1);
+  border: 1px solid var(--border-1);
+}
+.tabla th {
+  text-align: left;
+  font-family: var(--font-condensed);
+  font-weight: var(--weight-bold);
+  font-size: var(--fs-micro);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--fg-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 2px solid var(--famiq-graphite);
+}
+.tabla td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-1);
+}
+.tabla tr:last-child td {
+  border-bottom: 0;
+}
+
+.vacio {
+  padding: var(--space-7) var(--space-5);
+  text-align: center;
+  color: var(--fg-3);
+  background: var(--bg-1);
+  border: 1px dashed var(--border-2);
+}
+
+/* Chip de estado de ficha */
+.estado {
+  display: inline-block;
+  font-family: var(--font-condensed);
+  font-weight: var(--weight-bold);
+  font-size: var(--fs-micro);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-1);
+  border: 1px solid var(--border-1);
+  background: var(--bg-2);
+  color: var(--fg-2);
+}
+.estado[data-estado="aprobada"],
+.estado[data-estado="publicada"] {
+  border-color: var(--famiq-green);
+  color: var(--famiq-green);
+  background: transparent;
+}
+.estado[data-estado="en_revision"] {
+  border-color: var(--famiq-orange);
+  color: var(--famiq-orange);
+  background: transparent;
+}
+
+/* Formularios y botones */
+.form {
+  display: grid;
+  gap: var(--space-4);
+  max-width: var(--max-prose);
+  background: var(--bg-1);
+  border: 1px solid var(--border-1);
+  padding: var(--space-5);
+}
+.campo {
+  display: grid;
+  gap: var(--space-1);
+}
+.campo label {
+  font-family: var(--font-condensed);
+  font-weight: var(--weight-bold);
+  font-size: var(--fs-micro);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--fg-3);
+}
+.campo input,
+.campo select,
+.campo textarea {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-1);
+  background: var(--bg-1);
+}
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+  outline: 2px solid var(--famiq-red);
+  outline-offset: -1px;
+}
+
+.boton {
+  display: inline-block;
+  font-family: var(--font-condensed);
+  font-weight: var(--weight-bold);
+  font-size: var(--fs-small);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  padding: var(--space-2) var(--space-5);
+  border: 1px solid var(--famiq-red);
+  border-radius: var(--radius-1);
+  background: var(--famiq-red);
+  color: var(--famiq-white);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-standard);
+}
+.boton:hover {
+  background: var(--famiq-red-dark);
+  border-color: var(--famiq-red-dark);
+}
+.boton[data-variante="secundario"] {
+  background: transparent;
+  color: var(--fg-1);
+  border-color: var(--border-2);
+}
+.boton[data-variante="secundario"]:hover {
+  border-color: var(--famiq-graphite);
+}
+
+.error {
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--famiq-red);
+  background: var(--bg-2);
+  color: var(--fg-1);
+}
+
+.barra-acciones {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}

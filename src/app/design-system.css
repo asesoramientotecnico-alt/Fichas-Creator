@@ -1,0 +1,280 @@
+/* ============================================================
+   FAMIQ Design System — Colors & Type
+   Single source of truth for color and typography tokens.
+   Source: Famiq Manual de Marca (17pp, official).
+   ============================================================ */
+
+/* Roboto + Roboto Condensed from Google Fonts.
+   If you need offline/local fonts, drop .woff2 files into /fonts and
+   replace this @import with @font-face declarations. */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,300;1,400&family=Roboto+Condensed:wght@400;700&display=swap');
+
+:root {
+  /* ----------------------------------------------------------
+     COLOR — PRIMARY PALETTE
+     Red is the protagonist. Greys and graphite carry structure.
+     ---------------------------------------------------------- */
+  --famiq-red:        #D62717;  /* CMYK 10,95,100,0  | RGB 214,39,23 */
+  --famiq-red-dark:   #A4210E;  /* CMYK 10,95,100,30 | RGB 164,33,14 */
+  --famiq-graphite:   #474746;  /* CMYK 0,0,0,86     | RGB 71,71,70 (manual hex #242424 is incorrect — RGB resolves to #474746; we follow color) */
+  --famiq-grey-200:   #D9D9D9;  /* CMYK 0,0,0,15     | RGB 217,217,217 */
+
+  /* COLOR — SECONDARY / ACCENT
+     Use sparingly. Red must remain dominant on any composition. */
+  --famiq-yellow:     #FFCD1C;  /* CMYK 0,20,90,0 */
+  --famiq-orange:     #ED6E26;  /* CMYK 0,67,90,0 */
+  --famiq-green:      #49B170;  /* CMYK 70,0,70,0 */
+  --famiq-olive:      #B49D3B;  /* CMYK 30,30,85,10 */
+
+  /* COLOR — DERIVED / UI NEUTRALS */
+  --famiq-black:      #1A1A1A;
+  --famiq-white:      #FFFFFF;
+  --famiq-grey-50:    #F6F6F6;
+  --famiq-grey-100:   #ECECEC;
+  --famiq-grey-300:   #BFBFBF;
+  --famiq-grey-400:   #8A8A8A;
+  --famiq-grey-500:   #5E5E5E;
+
+  /* SEMANTIC TOKENS — use these in product code */
+  --fg-1:             var(--famiq-graphite);
+  --fg-2:             var(--famiq-grey-500);
+  --fg-3:             var(--famiq-grey-400);
+  --fg-on-red:        var(--famiq-white);
+  --fg-on-dark:       var(--famiq-white);
+  --fg-link:          var(--famiq-red);
+
+  --bg-1:             var(--famiq-white);
+  --bg-2:             var(--famiq-grey-50);
+  --bg-3:             var(--famiq-grey-100);
+  --bg-inverse:       var(--famiq-graphite);
+  --bg-accent:        var(--famiq-red);
+
+  --border-1:         var(--famiq-grey-200);
+  --border-2:         var(--famiq-grey-300);
+  --border-strong:    var(--famiq-graphite);
+
+  --success:          var(--famiq-green);
+  --warning:          var(--famiq-yellow);
+  --info:             var(--famiq-orange);
+  --danger:           var(--famiq-red-dark);
+
+  /* GRADIENTS — official primary-palette gradient (red → red-dark) */
+  --gradient-red:     linear-gradient(135deg, var(--famiq-red) 0%, var(--famiq-red-dark) 100%);
+  --gradient-graphite:linear-gradient(180deg, var(--famiq-graphite) 0%, var(--famiq-black) 100%);
+  /* Protection gradient for hero photography */
+  --gradient-protect: linear-gradient(180deg, rgba(26,26,26,0) 0%, rgba(26,26,26,.75) 100%);
+
+  /* ----------------------------------------------------------
+     TYPOGRAPHY — Roboto family
+     ---------------------------------------------------------- */
+  --font-sans:        'Roboto', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --font-condensed:   'Roboto Condensed', 'Roboto', system-ui, sans-serif;
+  --font-mono:        'Roboto Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Weights — per brand manual cuts */
+  --weight-thin:      100;
+  --weight-light:     300;
+  --weight-regular:   400;
+  --weight-medium:    500;
+  --weight-bold:      700;
+
+  /* Type scale (px) */
+  --fs-display:       72px;
+  --fs-h1:            56px;
+  --fs-h2:            40px;
+  --fs-h3:            28px;
+  --fs-h4:            22px;
+  --fs-lead:          18px;
+  --fs-body:          16px;
+  --fs-small:         14px;
+  --fs-micro:         12px;
+  --fs-eyebrow:       12px;
+
+  /* Line heights */
+  --lh-display:       1.0;
+  --lh-heading:       1.1;
+  --lh-body:          1.55;
+  --lh-tight:         1.25;
+
+  /* Letter spacing */
+  --tracking-tight:   -0.02em;
+  --tracking-snug:    -0.01em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.08em;
+  --tracking-eyebrow: 0.14em;
+
+  /* ----------------------------------------------------------
+     SPACING (4px base)
+     ---------------------------------------------------------- */
+  --space-0:          0;
+  --space-1:          4px;
+  --space-2:          8px;
+  --space-3:          12px;
+  --space-4:          16px;
+  --space-5:          24px;
+  --space-6:          32px;
+  --space-7:          48px;
+  --space-8:          64px;
+  --space-9:          96px;
+  --space-10:         128px;
+
+  /* RADII — industrial, mostly square */
+  --radius-0:         0;
+  --radius-1:         2px;     /* buttons, pills, inputs */
+  --radius-2:         4px;     /* cards */
+  --radius-3:         8px;     /* modals only */
+
+  /* SHADOWS — restrained, flat-industrial */
+  --shadow-0:         none;
+  --shadow-1:         0 1px 2px rgba(36,36,36,.06), 0 1px 1px rgba(36,36,36,.04);
+  --shadow-2:         0 8px 24px rgba(36,36,36,.10);
+  --shadow-3:         0 18px 48px rgba(36,36,36,.18);
+  --shadow-inset:     inset 0 0 0 1px rgba(36,36,36,.06);
+
+  /* MOTION */
+  --ease-standard:    cubic-bezier(.2, .8, .2, 1);
+  --ease-out:         cubic-bezier(0, 0, .2, 1);
+  --dur-fast:         140ms;
+  --dur-base:         200ms;
+  --dur-slow:         360ms;
+
+  /* LAYOUT */
+  --max-content:      1280px;
+  --max-prose:        680px;
+  --header-h:         72px;
+}
+
+/* ============================================================
+   SEMANTIC TYPE — apply with classes
+   ============================================================ */
+
+.t-display {
+  font-family: var(--font-condensed);
+  font-weight: var(--weight-bold);
+  font-size: var(--fs-display);
+  line-height: var(--lh-display);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-1);
+}
+
+.t-h1, h1.t {
+  font-family: var(--font-condensed);
+  font-weight: var(--weight-bold);
+  font-size: var(--fs-h1);
+  line-height: var(--lh-heading);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-1);
+}
+
+.t-h2, h2.t {
+  font-family: var(--font-condensed);
+  font-weight: var(--weight-bold);
+  font-size: var(--fs-h2);
+  line-height: var(--lh-heading);
+  letter-spacing: var(--tracking-snug);
+  color: var(--fg-1);
+}
+
+.t-h3, h3.t {
+  font-family: var(--font-sans);
+  font-weight: var(--weight-medium);
+  font-size: var(--fs-h3);
+  line-height: var(--lh-tight);
+  color: var(--fg-1);
+}
+
+.t-h4, h4.t {
+  font-family: var(--font-sans);
+  font-weight: var(--weight-medium);
+  font-size: var(--fs-h4);
+  line-height: var(--lh-tight);
+  color: var(--fg-1);
+}
+
+.t-lead {
+  font-family: var(--font-sans);
+  font-weight: var(--weight-regular);
+  font-size: var(--fs-lead);
+  line-height: var(--lh-body);
+  color: var(--fg-1);
+}
+
+.t-body, p.t {
+  font-family: var(--font-sans);
+  font-weight: var(--weight-regular);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--fg-1);
+}
+
+.t-small {
+  font-family: var(--font-sans);
+  font-weight: var(--weight-regular);
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
+  color: var(--fg-2);
+}
+
+.t-micro {
+  font-family: var(--font-sans);
+  font-weight: var(--weight-regular);
+  font-size: var(--fs-micro);
+  line-height: 1.4;
+  color: var(--fg-2);
+}
+
+.t-eyebrow {
+  font-family: var(--font-condensed);
+  font-weight: var(--weight-bold);
+  font-size: var(--fs-eyebrow);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+  color: var(--famiq-red);
+}
+
+.t-data {
+  font-family: var(--font-condensed);
+  font-weight: var(--weight-regular);
+  font-size: var(--fs-body);
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-1);
+}
+
+.t-quote {
+  font-family: var(--font-sans);
+  font-weight: var(--weight-thin);
+  font-size: 36px;
+  line-height: 1.3;
+  letter-spacing: var(--tracking-snug);
+  color: var(--fg-1);
+}
+
+/* Italic editorial accent — Roboto Light Italic */
+.t-italic-accent {
+  font-family: var(--font-sans);
+  font-weight: var(--weight-light);
+  font-style: italic;
+  font-size: var(--fs-lead);
+  color: var(--fg-2);
+}
+
+/* ============================================================
+   ELEMENT DEFAULTS — opt-in via body class .famiq
+   ============================================================ */
+.famiq {
+  color: var(--fg-1);
+  background: var(--bg-1);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.famiq h1 { font: var(--weight-bold) var(--fs-h1)/var(--lh-heading) var(--font-condensed); letter-spacing: var(--tracking-tight); }
+.famiq h2 { font: var(--weight-bold) var(--fs-h2)/var(--lh-heading) var(--font-condensed); letter-spacing: var(--tracking-snug); }
+.famiq h3 { font: var(--weight-medium) var(--fs-h3)/var(--lh-tight) var(--font-sans); }
+.famiq h4 { font: var(--weight-medium) var(--fs-h4)/var(--lh-tight) var(--font-sans); }
+.famiq p  { font: var(--weight-regular) var(--fs-body)/var(--lh-body) var(--font-sans); }
+.famiq a  { color: var(--fg-link); text-decoration: none; border-bottom: 1px solid currentColor; }
+.famiq a:hover { color: var(--famiq-red-dark); }
