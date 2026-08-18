@@ -1,0 +1,66 @@
+import type { Bloque, TipoBloque } from "@/lib/tipos";
+
+/**
+ * Plantillas vacías por tipo. El usuario elige entre los tipos que existen
+ * en §4 — no puede inventar uno — y cada uno nace con su forma correcta.
+ */
+
+export const TIPOS_DISPONIBLES: { tipo: TipoBloque; nombre: string; descripcion: string }[] = [
+  { tipo: "header", nombre: "Cabecera", descripcion: "Título, subtítulo en inglés y foto. Uno por ficha, siempre primero." },
+  { tipo: "tabla-kv", nombre: "Tabla etiqueta → valor", descripcion: "Ej. Normas aplicables." },
+  { tipo: "par-texto", nombre: "Par de textos", descripcion: "Dos textos a dos columnas, cada uno con su etiqueta." },
+  { tipo: "tabla", nombre: "Tabla", descripcion: "Encabezados y N columnas. Ej. Propiedades mecánicas." },
+  { tipo: "inline-kv", nombre: "Etiqueta y valor en línea", descripcion: "Ej. Materiales disponibles." },
+  { tipo: "texto-rico", nombre: "Párrafos", descripcion: "Ej. Descripción." },
+  { tipo: "chips", nombre: "Etiquetas cortas", descripcion: "Ej. Aplicaciones típicas." },
+  { tipo: "croquis", nombre: "Croquis", descripcion: "Imagen más leyenda de cotas." },
+  { tipo: "tabla-dim", nombre: "Tablas dimensionales", descripcion: "Una o dos tablas con su unidad." },
+  { tipo: "barra-destacada", nombre: "Barra destacada", descripcion: "Etiqueta y valor sobre banda gris. Va al pie de la hoja." },
+];
+
+let contador = 0;
+
+/** Id estable dentro de la sesión de edición. El diff empareja por id. */
+export function nuevoId(tipo: TipoBloque): string {
+  contador += 1;
+  return `${tipo}-${Date.now().toString(36)}-${contador}`;
+}
+
+export function bloqueVacio(tipo: TipoBloque): Bloque {
+  const id = nuevoId(tipo);
+  switch (tipo) {
+    case "header":
+      return { id, tipo, ancho: "completo", familia: "", subfamilia: "", tituloEs: "", subtituloEn: "" };
+    case "tabla-kv":
+      return { id, tipo, ancho: "completo", etiqueta: "Nueva sección", filas: [{ label: "", value: "" }] };
+    case "par-texto":
+      return {
+        id, tipo, ancho: "completo",
+        izquierda: { etiqueta: "", texto: "" },
+        derecha: { etiqueta: "", texto: "" },
+      };
+    case "tabla":
+      return {
+        id, tipo, ancho: "completo", etiqueta: "Nueva tabla",
+        columnas: [{ titulo: "" }, { titulo: "" }],
+        filas: [["", ""]],
+      };
+    case "inline-kv":
+      return { id, tipo, ancho: "completo", etiqueta: "", valor: "" };
+    case "texto-rico":
+      return { id, tipo, ancho: "medio", etiqueta: "Nueva sección", parrafos: [""] };
+    case "chips":
+      return { id, tipo, ancho: "medio", etiqueta: "Nueva sección", items: [""] };
+    case "croquis":
+      return { id, tipo, ancho: "completo", cotas: [{ simbolo: "", nombre: "" }] };
+    case "tabla-dim":
+      return {
+        id, tipo, ancho: "completo",
+        tablas: [{ etiqueta: "Dimensiones", unidad: "mm", columnas: ["", "", ""], filas: [["", "", ""]] }],
+      };
+    case "barra-destacada":
+      return { id, tipo, ancho: "completo", etiqueta: "", valor: "" };
+    case "chart":
+      return { id, tipo, ancho: "completo", etiqueta: "", series: [] };
+  }
+}

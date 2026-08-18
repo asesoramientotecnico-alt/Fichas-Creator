@@ -1,0 +1,132 @@
+/* Chrome del editor. No toca la estética de la ficha. */
+
+.editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .editor { grid-template-columns: minmax(0, 1fr); }
+}
+
+.editor-lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.bloque-editor {
+  background: var(--bg-1);
+  border: 1px solid var(--border-1);
+  border-left: 3px solid var(--famiq-grey-300);
+}
+
+.bloque-editor[data-nuevo="true"] { border-left-color: var(--famiq-green); }
+
+.bloque-editor > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-1);
+  background: var(--bg-2);
+}
+
+.bloque-editor > header .tipo {
+  font-family: var(--font-condensed);
+  font-weight: var(--weight-bold);
+  font-size: var(--fs-micro);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--fg-2);
+}
+
+.bloque-editor > .cuerpo {
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.acciones-bloque { display: flex; gap: var(--space-1); }
+
+.icono {
+  border: 1px solid var(--border-2);
+  background: var(--bg-1);
+  border-radius: var(--radius-1);
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  line-height: 1;
+  font-size: 14px;
+}
+.icono:hover:not(:disabled) { border-color: var(--famiq-graphite); }
+.icono:disabled { opacity: .35; cursor: not-allowed; }
+.icono[data-peligro="true"]:hover { border-color: var(--famiq-red); color: var(--famiq-red); }
+
+.fila-campos {
+  display: grid;
+  gap: var(--space-2);
+  align-items: end;
+}
+
+.fila-lista {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.sub-lista {
+  display: grid;
+  gap: var(--space-2);
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--border-1);
+}
+
+.editor-panel {
+  position: sticky;
+  top: var(--space-4);
+  background: var(--bg-1);
+  border: 1px solid var(--border-1);
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.editor-panel h2 {
+  font-family: var(--font-condensed);
+  font-weight: var(--weight-bold);
+  font-size: var(--fs-micro);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+  color: var(--famiq-red);
+  margin: 0;
+}
+
+.tipo-opcion {
+  text-align: left;
+  border: 1px solid var(--border-2);
+  background: var(--bg-1);
+  border-radius: var(--radius-1);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  display: grid;
+  gap: 2px;
+}
+.tipo-opcion:hover { border-color: var(--famiq-red); }
+.tipo-opcion .nombre { font-weight: var(--weight-medium); }
+.tipo-opcion .desc { font-size: var(--fs-micro); color: var(--fg-3); }
+
+.aviso {
+  padding: var(--space-3);
+  background: var(--bg-2);
+  border-left: 3px solid var(--famiq-orange);
+  font-size: var(--fs-micro);
+}
+
+textarea { resize: vertical; min-height: 4.5em; }

@@ -207,3 +207,23 @@ export interface SugerenciaIa {
   decidido_at: string | null;
   created_at: string;
 }
+
+/** Tipos de bloque válidos de §4. Fuente única para validar lo que llega de la base. */
+export const TIPOS_BLOQUE: readonly TipoBloque[] = [
+  "header", "tabla-kv", "par-texto", "tabla", "inline-kv",
+  "texto-rico", "chips", "croquis", "tabla-dim", "barra-destacada", "chart",
+];
+
+/**
+ * `ficha_revision.bloques` es jsonb: la base no garantiza su forma. Se filtra
+ * lo que no tenga id y un tipo de §4, en vez de confiar en un cast, para que
+ * un bloque corrupto no rompa el render de toda la ficha.
+ */
+export function comoBloques(valor: unknown): Bloque[] {
+  if (!Array.isArray(valor)) return [];
+  return valor.filter((b): b is Bloque => {
+    if (typeof b !== "object" || b === null) return false;
+    const o = b as Record<string, unknown>;
+    return typeof o.id === "string" && TIPOS_BLOQUE.includes(o.tipo as TipoBloque);
+  });
+}
