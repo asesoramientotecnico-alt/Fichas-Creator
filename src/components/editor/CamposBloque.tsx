@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import type { Bloque } from "@/lib/tipos";
 
 /** Editores de campo por tipo de bloque. Ninguno acepta HTML ni estilos. */
@@ -13,13 +14,16 @@ function Texto({
   multilinea?: boolean;
   placeholder?: string;
 }) {
+  // El label tiene que apuntar a su campo: sin htmlFor no lo anuncia un lector
+  // de pantalla ni lo encuentra una prueba por etiqueta.
+  const id = useId();
   return (
     <div className="campo">
-      <label>{etiqueta}</label>
+      <label htmlFor={id}>{etiqueta}</label>
       {multilinea ? (
-        <textarea value={valor} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+        <textarea id={id} value={valor} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
       ) : (
-        <input value={valor} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+        <input id={id} value={valor} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
       )}
     </div>
   );
@@ -114,7 +118,7 @@ export default function CamposBloque({
       return (
         <>
           <Texto etiqueta="Etiqueta de la tabla" valor={bloque.etiqueta} onChange={(v) => set({ etiqueta: v })} />
-          <div className="campo"><label>Columnas</label></div>
+          <p className="campo" style={{ margin: 0 }}><label>Columnas</label></p>
           <div className="sub-lista">
             {bloque.columnas.map((col, i) => (
               <div className="fila-lista" key={i}>
@@ -137,7 +141,7 @@ export default function CamposBloque({
             filas: bloque.filas.map((f) => [...f, ""]),
           })}>Agregar columna</BotonAgregar>
 
-          <div className="campo"><label>Filas</label></div>
+          <p className="campo" style={{ margin: 0 }}><label>Filas</label></p>
           <div className="sub-lista">
             {bloque.filas.map((fila, i) => (
               <div className="fila-lista" key={i}>

@@ -17,6 +17,7 @@ export default async function Cabecera() {
         <nav className="app-nav">
           <Link href="/">Fichas</Link>
           <Link href="/productos">Productos</Link>
+          <Link href="/familias">Familias</Link>
         </nav>
       </div>
 

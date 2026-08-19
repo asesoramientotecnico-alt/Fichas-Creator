@@ -16,6 +16,7 @@ export const TIPOS_DISPONIBLES: { tipo: TipoBloque; nombre: string; descripcion:
   { tipo: "croquis", nombre: "Croquis", descripcion: "Imagen más leyenda de cotas." },
   { tipo: "tabla-dim", nombre: "Tablas dimensionales", descripcion: "Una o dos tablas con su unidad." },
   { tipo: "barra-destacada", nombre: "Barra destacada", descripcion: "Etiqueta y valor sobre banda gris. Va al pie de la hoja." },
+  { tipo: "chart", nombre: "Gráfico", descripcion: "Curvas desde una tabla de datos. Hasta 4 series. Se dibuja en el servidor, sin IA." },
 ];
 
 let contador = 0;
@@ -61,6 +62,10 @@ export function bloqueVacio(tipo: TipoBloque): Bloque {
     case "barra-destacada":
       return { id, tipo, ancho: "completo", etiqueta: "", valor: "" };
     case "chart":
-      return { id, tipo, ancho: "completo", etiqueta: "", series: [] };
+      return {
+        id, tipo, ancho: "completo", etiqueta: "Nuevo gráfico",
+        series: [{ nombre: "Serie 1", puntos: [{ x: 0, y: 0 }] }],
+        etiquetaX: "", etiquetaY: "",
+      };
   }
 }

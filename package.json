@@ -12,9 +12,11 @@
     "test:e2e": "playwright test",
     "capturar": "node scripts/capturar-ficha.mjs ./capturas",
     "test:paginado": "node scripts/probar-paginado.mjs",
-    "test:unit": "node scripts/probar-diff.mjs && node scripts/probar-paginado.mjs && node scripts/probar-revisor.mjs && node scripts/probar-aplicar.mjs",
+    "test:unit": "node scripts/probar-diff.mjs && node scripts/probar-paginado.mjs && node scripts/probar-revisor.mjs && node scripts/probar-aplicar.mjs && tsx scripts/plantilla.test.ts && tsx scripts/chart.test.ts",
     "test:revisor": "node scripts/probar-revisor.mjs",
-    "test:revisor-real": "tsx scripts/revisor-real.ts"
+    "test:revisor-real": "tsx scripts/revisor-real.ts",
+    "test:plantilla": "tsx scripts/plantilla.test.ts",
+    "test:chart": "tsx scripts/chart.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.117.1",

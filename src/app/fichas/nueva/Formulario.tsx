@@ -1,15 +1,24 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
-import { crearFicha } from "@/app/acciones";
+import { crearFicha, crearFichaDesdePlantilla } from "@/app/acciones";
 
 interface Props {
   productos: { id: string; sku: string; nombre_es: string }[];
+  familias: { id: string; nombre: string }[];
+  familiaInicial: string;
 }
 
-export default function FormularioNuevaFicha({ productos }: Props) {
-  const [estado, accion, pendiente] = useActionState(crearFicha, null);
+export default function FormularioNuevaFicha({ productos, familias, familiaInicial }: Props) {
+  // Con familia se instancia su plantilla; sin familia, la ficha nace vacía.
+  const [familiaId, setFamiliaId] = useState(familiaInicial);
+  const desdePlantilla = familiaId !== "";
+
+  const [estado, accion, pendiente] = useActionState(
+    desdePlantilla ? crearFichaDesdePlantilla : crearFicha,
+    null,
+  );
 
   return (
     <form action={accion} className="form">
@@ -25,6 +34,28 @@ export default function FormularioNuevaFicha({ productos }: Props) {
             </option>
           ))}
         </select>
+      </div>
+
+      <div className="campo">
+        <label htmlFor="familia_id">Familia (plantilla)</label>
+        <select
+          id="familia_id"
+          name="familia_id"
+          value={familiaId}
+          onChange={(e) => setFamiliaId(e.target.value)}
+        >
+          <option value="">Sin plantilla — arrancar de cero</option>
+          {familias.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.nombre}
+            </option>
+          ))}
+        </select>
+        {desdePlantilla ? (
+          <span style={{ fontSize: "var(--fs-micro)", color: "var(--fg-3)" }}>
+            La ficha nace con los bloques de la plantilla, vacíos de datos.
+          </span>
+        ) : null}
       </div>
 
       <div className="campo">
@@ -48,7 +79,7 @@ export default function FormularioNuevaFicha({ productos }: Props) {
 
       <div style={{ display: "flex", gap: "var(--space-3)" }}>
         <button className="boton" type="submit" disabled={pendiente}>
-          {pendiente ? "Creando…" : "Crear ficha"}
+          {pendiente ? "Creando…" : desdePlantilla ? "Crear desde plantilla" : "Crear ficha"}
         </button>
         <Link className="boton" data-variante="secundario" href="/">
           Cancelar

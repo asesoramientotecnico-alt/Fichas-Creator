@@ -119,7 +119,10 @@ export interface BloqueBarraDestacada extends BloqueBase {
 export interface BloqueChart extends BloqueBase {
   tipo: "chart";
   etiqueta: string;
+  /** Máximo 4 series: la paleta validada tiene ese tope y no se cicla. */
   series: { nombre: string; puntos: { x: number; y: number }[] }[];
+  etiquetaX?: string;
+  etiquetaY?: string;
 }
 
 export type Bloque =

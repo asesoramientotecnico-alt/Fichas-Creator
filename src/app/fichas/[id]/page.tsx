@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Cabecera from "@/components/Cabecera";
 import ControlEstado from "./ControlEstado";
 import PanelHallazgos, { type Sugerencia } from "./PanelHallazgos";
+import GuardarPlantilla from "./GuardarPlantilla";
 import { crearClienteServidor } from "@/lib/supabase/cliente-servidor";
 import { estadosPosibles } from "@/app/acciones-ficha";
 import { ESTADOS_SIN_MARCA_DE_AGUA, comoBloques, type FichaEstado } from "@/lib/tipos";
@@ -94,6 +95,8 @@ export default async function FichaPage({ params }: { params: Promise<{ id: stri
         ) : null}
 
         <PanelHallazgos fichaId={id} sugerencias={sugerencias ?? []} />
+
+        {bloques.length > 0 ? <GuardarPlantilla fichaId={id} /> : null}
 
         <h2 className="eyebrow" style={{ color: "var(--fg-3)", marginTop: "var(--space-6)" }}>
           Historial de revisiones

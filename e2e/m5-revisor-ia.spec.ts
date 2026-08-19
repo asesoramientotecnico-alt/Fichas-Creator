@@ -78,16 +78,19 @@ async function ultimaRevision(fichaId: string) {
 }
 
 test("sin ANTHROPIC_API_KEY el endpoint lo dice claro, no falla en silencio", async ({ page }) => {
+  // Con clave configurada, la revisión real tarda minutos: no entra en el
+  // timeout de un E2E, y su verificación vive en scripts/revisor-real.ts.
+  test.skip(
+    Boolean(process.env.ANTHROPIC_API_KEY),
+    "Con ANTHROPIC_API_KEY la verificación es scripts/revisor-real.ts",
+  );
+
   await entrar(page);
   const fichaId = await prepararFicha(page);
 
   const r = await page.request.post(`/api/fichas/${fichaId}/revisar`);
-  if (process.env.ANTHROPIC_API_KEY) {
-    expect(r.status()).toBe(200);
-  } else {
-    expect(r.status()).toBe(503);
-    expect((await r.json()).error).toContain("ANTHROPIC_API_KEY");
-  }
+  expect(r.status()).toBe(503);
+  expect((await r.json()).error).toContain("ANTHROPIC_API_KEY");
 });
 
 test("aceptar un hallazgo crea una revisión nueva y deja rastro de quién decidió", async ({ page }) => {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { generarPdf } from "@/lib/pdf/generar";
 import { FICHA_TUERCA, ASSETS_TUERCA } from "@/lib/fixtures/tuerca-autofrenante";
+import { BLOQUES_CHART } from "@/lib/fixtures/chart-demo";
 import type { FichaEstado } from "@/lib/tipos";
 
 /**
@@ -11,6 +12,8 @@ import type { FichaEstado } from "@/lib/tipos";
  * `?estado=borrador` fuerza el estado para verificar la marca de agua.
  * `?repetir=N` duplica los bloques N veces, para verificar que el paginado
  * abre hojas de más en vez de recortar.
+ * `?chart=1` agrega el bloque de gráfico. Va aparte del fixture de referencia
+ * porque ésta tiene que salir en exactamente dos hojas (criterio de M4).
  */
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -32,9 +35,12 @@ export async function GET(peticion: Request) {
 
     // Duplicar bloques exige ids nuevos: el reparto (y el diff) los usan
     // como identidad.
-    const repetir = Math.min(Math.max(Number(new URL(peticion.url).searchParams.get("repetir")) || 1, 1), 8);
+    const params = new URL(peticion.url).searchParams;
+    const repetir = Math.min(Math.max(Number(params.get("repetir")) || 1, 1), 8);
+    const conChart = params.get("chart") === "1";
+    const conjunto = conChart ? [...base, ...BLOQUES_CHART] : base;
     const bloques = Array.from({ length: repetir }, (_, vuelta) =>
-      base.map((b) => (vuelta === 0 ? b : { ...b, id: `${b.id}-r${vuelta}` })),
+      conjunto.map((b) => (vuelta === 0 ? b : { ...b, id: `${b.id}-r${vuelta}` })),
     ).flat();
 
     const { pdf } = await generarPdf(

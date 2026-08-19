@@ -3,13 +3,26 @@ import Cabecera from "@/components/Cabecera";
 import { crearClienteServidor } from "@/lib/supabase/cliente-servidor";
 import FormularioNuevaFicha from "./Formulario";
 
-export default async function NuevaFichaPage() {
+export default async function NuevaFichaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ familia?: string }>;
+}) {
+  const { familia } = await searchParams;
   const supabase = await crearClienteServidor();
-  const { data: productos } = await supabase
-    .from("producto")
-    .select("id, sku, nombre_es")
-    .order("nombre_es")
-    .overrideTypes<{ id: string; sku: string; nombre_es: string }[]>();
+
+  const [{ data: productos }, { data: familias }] = await Promise.all([
+    supabase
+      .from("producto")
+      .select("id, sku, nombre_es")
+      .order("nombre_es")
+      .overrideTypes<{ id: string; sku: string; nombre_es: string }[]>(),
+    supabase
+      .from("familia")
+      .select("id, nombre")
+      .order("nombre")
+      .overrideTypes<{ id: string; nombre: string }[]>(),
+  ]);
 
   return (
     <div className="app-shell">
@@ -26,7 +39,11 @@ export default async function NuevaFichaPage() {
             <Link href="/productos/nuevo">Creá el primero</Link>.
           </p>
         ) : (
-          <FormularioNuevaFicha productos={productos} />
+          <FormularioNuevaFicha
+            productos={productos}
+            familias={familias ?? []}
+            familiaInicial={familia ?? ""}
+          />
         )}
       </main>
     </div>

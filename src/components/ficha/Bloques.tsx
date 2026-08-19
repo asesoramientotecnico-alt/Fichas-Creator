@@ -12,6 +12,7 @@ import type {
   BloqueBarraDestacada,
   BloqueChart,
 } from "@/lib/tipos";
+import { generarChartSvg, seriesATabla } from "@/lib/chart";
 
 /**
  * Un componente por tipo de bloque de §4. Ninguno acepta HTML libre ni
@@ -210,11 +211,47 @@ export function BarraDestacada({ bloque }: { bloque: BloqueBarraDestacada }) {
   );
 }
 
-/** M6. Se declara para que el switch sea exhaustivo, todavía no dibuja. */
+/**
+ * El SVG se genera en el servidor y se inyecta como markup: es determinístico
+ * y no lleva scripts (§7). Los datos van además como tabla, para que la
+ * identidad de cada serie no dependa sólo del color.
+ */
 export function Chart({ bloque }: { bloque: BloqueChart }) {
+  const svg = generarChartSvg({
+    series: bloque.series,
+    etiquetaX: bloque.etiquetaX,
+    etiquetaY: bloque.etiquetaY,
+  });
+  const tabla = seriesATabla(bloque.series, bloque.etiquetaX || "x");
+
   return (
     <section className="bloque bloque-chart" data-ancho={bloque.ancho ?? "completo"}>
       <Etiqueta>{bloque.etiqueta}</Etiqueta>
+      <div className="grafico" dangerouslySetInnerHTML={{ __html: svg }} />
+      {tabla.filas.length > 0 ? (
+        <table className="tabla-datos tabla-grafico">
+          <thead>
+            <tr>
+              {tabla.columnas.map((c, i) => (
+                <th key={i} data-alineacion={i === 0 ? "izquierda" : "derecha"}>
+                  {c}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {tabla.filas.map((fila, i) => (
+              <tr key={i}>
+                {fila.map((celda, j) => (
+                  <td key={j} data-alineacion={j === 0 ? "izquierda" : "derecha"}>
+                    {celda}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : null}
     </section>
   );
 }
