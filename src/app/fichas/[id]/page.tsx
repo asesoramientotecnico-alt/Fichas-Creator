@@ -62,6 +62,12 @@ export default async function FichaPage({ params }: { params: Promise<{ id: stri
           </div>
           <div style={{ display: "flex", gap: "var(--space-2)" }}>
             <Link className="boton" href={`/fichas/${id}/editar`}>Editar</Link>
+            {bloques.length > 0 ? (
+              <a className="boton" data-variante="secundario" href={`/api/fichas/${id}/pdf`}
+                 target="_blank" rel="noopener">
+                Ver PDF
+              </a>
+            ) : null}
             {(revisiones?.length ?? 0) > 1 ? (
               <Link className="boton" data-variante="secundario" href={`/fichas/${id}/revisiones`}>
                 Comparar revisiones

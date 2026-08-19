@@ -39,10 +39,18 @@ export async function middleware(request: NextRequest) {
   const esRutaPublica =
     ruta.startsWith("/login") ||
     ruta.startsWith("/auth") ||
-    // Pantalla de control de fidelidad de M2. Datos hardcodeados, sin DB.
-    ruta.startsWith("/vista-previa");
+    // Pantalla y PDF de control de fidelidad. Datos hardcodeados, sin DB.
+    ruta.startsWith("/vista-previa") ||
+    ruta.startsWith("/api/vista-previa");
 
   if (!user && !esRutaPublica) {
+    // Una API contesta 401, no el HTML del login: un cliente que espera JSON
+    // o un PDF y recibe una pantalla de login con 200 no puede distinguir
+    // el fallo del éxito.
+    if (ruta.startsWith("/api/")) {
+      return NextResponse.json({ error: "Necesitás iniciar sesión." }, { status: 401 });
+    }
+
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("volver_a", ruta);

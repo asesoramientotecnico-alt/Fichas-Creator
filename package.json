@@ -13,9 +13,11 @@
     "capturar": "node scripts/capturar-ficha.mjs ./capturas"
   },
   "dependencies": {
+    "@sparticuz/chromium": "^149.0.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.10",
     "next": "^15.1.3",
+    "puppeteer-core": "^25.8.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
