@@ -10,6 +10,7 @@ import { compararRevisiones, ETIQUETA_CLASE } from "@/lib/diff";
 import CamposBloque from "./CamposBloque";
 import FichaPaginada from "@/components/ficha/FichaPaginada";
 import type { DatosFicha } from "@/components/ficha/FichaVista";
+import type { AssetDisponible } from "@/app/acciones-assets";
 import "./editor.css";
 
 const NOMBRE_TIPO = new Map(TIPOS_DISPONIBLES.map((t) => [t.tipo, t.nombre]));
@@ -27,6 +28,7 @@ export default function Editor({
   datosFicha,
   producto,
   assets,
+  assetsDisponibles = [],
 }: {
   fichaId: string;
   bloquesIniciales: Bloque[];
@@ -34,6 +36,8 @@ export default function Editor({
   /** Nombre del producto: va en rojo en la cabecera de las hojas interiores. */
   producto: string;
   assets?: Record<string, string>;
+  /** Librería de la familia: es de donde se eligen las imágenes de los bloques. */
+  assetsDisponibles?: AssetDisponible[];
 }) {
   const router = useRouter();
   const [bloques, setBloques] = useState<Bloque[]>(bloquesIniciales);
@@ -128,6 +132,7 @@ export default function Editor({
               </div>
               <CamposBloque
                 bloque={bloque}
+                assetsDisponibles={assetsDisponibles}
                 onChange={(nuevo) => setBloques(bloques.map((b, j) => (j === i ? nuevo : b)))}
               />
             </div>

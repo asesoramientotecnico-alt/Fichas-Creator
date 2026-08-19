@@ -5,6 +5,7 @@ import Editor from "@/components/editor/Editor";
 import { NOTA_AL_PIE } from "@/components/ficha/FichaVista";
 import { crearClienteServidor } from "@/lib/supabase/cliente-servidor";
 import { comoBloques, type FichaEstado } from "@/lib/tipos";
+import { assetsDeFamilia } from "@/app/acciones-assets";
 
 export default async function EditarFichaPage({
   params,
@@ -16,7 +17,7 @@ export default async function EditarFichaPage({
 
   const { data: ficha } = await supabase
     .from("ficha")
-    .select("id, estado, version, anio, producto(sku, nombre_es, categoria)")
+    .select("id, estado, version, anio, producto(sku, nombre_es, categoria, familia_id)")
     .eq("id", id)
     .maybeSingle()
     .overrideTypes<{
@@ -24,7 +25,12 @@ export default async function EditarFichaPage({
       estado: FichaEstado;
       version: string;
       anio: number;
-      producto: { sku: string; nombre_es: string; categoria: string | null } | null;
+      producto: {
+        sku: string;
+        nombre_es: string;
+        categoria: string | null;
+        familia_id: string | null;
+      } | null;
     }>();
 
   if (!ficha) notFound();
@@ -37,6 +43,9 @@ export default async function EditarFichaPage({
     .limit(1)
     .maybeSingle()
     .overrideTypes<{ id: string; n: number; bloques: unknown }>();
+
+  // Los bloques con imagen se eligen de la librería de la familia (§7).
+  const assets = await assetsDeFamilia(ficha.producto?.familia_id ?? null);
 
   return (
     <div className="app-shell">
@@ -69,7 +78,8 @@ export default async function EditarFichaPage({
             nota: NOTA_AL_PIE,
           }}
           producto={ficha.producto?.nombre_es ?? ""}
-          assets={{ producto: "/ficha/producto.png", croquis: "/ficha/croquis.png" }}
+          assets={assets.mapa}
+          assetsDisponibles={assets.lista}
         />
       </main>
     </div>

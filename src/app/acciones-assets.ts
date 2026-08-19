@@ -103,3 +103,48 @@ export async function urlDeAsset(storagePath: string, segundos = 3600): Promise<
   const { data } = await supabase.storage.from(BUCKET).createSignedUrl(storagePath, segundos);
   return data?.signedUrl ?? null;
 }
+
+export interface AssetDisponible {
+  id: string;
+  tipo: AssetTipo;
+  alt: string | null;
+  url: string;
+}
+
+/**
+ * Assets de la familia de un producto, listos para renderizar: la lista para
+ * elegir en el editor y el mapa `assetId → URL firmada` que consumen los
+ * bloques con imagen (§7).
+ *
+ * Los dos assets de demostración quedan como respaldo para que las fichas de
+ * prueba, que apuntan a `producto` y `croquis`, sigan mostrando algo.
+ */
+export async function assetsDeFamilia(
+  familiaId: string | null,
+): Promise<{ lista: AssetDisponible[]; mapa: Record<string, string> }> {
+  const mapa: Record<string, string> = {
+    producto: "/ficha/producto.png",
+    croquis: "/ficha/croquis.png",
+  };
+  if (!familiaId) return { lista: [], mapa };
+
+  const supabase = await crearClienteServidor();
+  const { data } = await supabase
+    .from("asset")
+    .select("id, tipo, alt, storage_path")
+    .eq("familia_id", familiaId)
+    .order("created_at", { ascending: false })
+    .overrideTypes<{ id: string; tipo: AssetTipo; alt: string | null; storage_path: string }[]>();
+
+  const lista: AssetDisponible[] = [];
+  for (const a of data ?? []) {
+    const url = await urlDeAsset(a.storage_path);
+    // Un asset sin URL firmada no se puede mostrar; se omite en vez de dejar
+    // un src roto en la ficha.
+    if (!url) continue;
+    lista.push({ id: a.id, tipo: a.tipo, alt: a.alt, url });
+    mapa[a.id] = url;
+  }
+
+  return { lista, mapa };
+}

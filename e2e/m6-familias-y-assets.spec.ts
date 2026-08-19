@@ -211,3 +211,51 @@ test("la librería de assets acepta una subida", async ({ page }) => {
   }
   await expect(subido).toBeVisible();
 });
+
+test("un bloque de imagen elige su asset de la librería de la familia", async ({ page }) => {
+  // Cierra el circuito de §7: el asset se sube una vez a la familia y los
+  // bloques con imagen de cualquier ficha de esa familia lo eligen por id. El
+  // src que sale es una URL firmada del bucket privado, no una ruta pública.
+  await entrar(page);
+  const { fichaId } = await fichaConContenido(page);
+
+  // Guardar la ficha como familia deja al producto asociado a ella, así que
+  // sus assets quedan disponibles para los bloques de la misma ficha.
+  await page.goto(`/fichas/${fichaId}`);
+  await page.getByRole("button", { name: "Guardar como plantilla de familia" }).click();
+  await page.getByLabel("Nombre de la familia").fill(`Familia imagen ${sufijo()}`);
+  await page.getByRole("button", { name: "Guardar plantilla" }).click();
+  await expect(page).toHaveURL(/\/familias\/[0-9a-f-]{36}$/, { timeout: 20_000 });
+
+  // PNG mínimo válido de 1x1.
+  const png = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==",
+    "base64",
+  );
+  await page.getByLabel("Archivo").setInputFiles({
+    name: "despiece-prueba.png",
+    mimeType: "image/png",
+    buffer: png,
+  });
+  await page.getByLabel("Descripción (texto alternativo)").fill("Despiece de prueba");
+  await page.getByRole("button", { name: "Subir a la librería" }).click();
+  await expect(page.getByText("Despiece de prueba")).toBeVisible({ timeout: 20_000 });
+
+  // En el editor, el bloque de imagen ofrece ese asset por su descripción.
+  await page.goto(`/fichas/${fichaId}/editar`);
+  // El botón del catálogo lleva nombre y descripción, así que se identifica
+  // por su descripción, que es única.
+  await page.locator(".tipo-opcion", { hasText: "Imagen con rótulo" }).click();
+  const selector = page.getByLabel("Imagen", { exact: true });
+  await expect(selector).toBeVisible();
+  await selector.selectOption({ label: "Despiece de prueba" });
+
+  await page.getByLabel("Comentario de la revisión").fill("Imagen desde la librería");
+  await page.getByRole("button", { name: "Guardar revisión" }).click();
+  await expect(page).toHaveURL(new RegExp(`${fichaId}$`), { timeout: 20_000 });
+
+  // La ficha renderizada muestra la imagen con la URL firmada del bucket.
+  const img = page.locator(".bloque-imagen img");
+  await expect(img).toHaveCount(1);
+  await expect(img).toHaveAttribute("src", /token=/);
+});

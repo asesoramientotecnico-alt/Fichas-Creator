@@ -133,6 +133,19 @@ Tres, y las tres están medidas:
    verifica que ningún texto de una ficha use un carácter sin cobertura, así
    que este caso no puede volver por descuido.
 
+## Los bloques con imagen quedan conectados a la librería
+
+Hasta ahora las fichas resolvían sólo dos imágenes de demostración con ruta
+fija. Con `imagen` y `codigos` eso ya no alcanza, así que el circuito de §7
+queda cerrado: `assetsDeFamilia()` devuelve los assets de la familia del
+producto con su URL firmada, y la vista, el editor y el PDF los consumen por
+`assetId`. En el editor cada bloque con imagen —`header`, `croquis`, `imagen`,
+`codigos`— tiene un selector que lista lo que hay cargado en la familia.
+
+El generador de PDF baja la URL firmada y la embebe como data URI, igual que
+hace con las imágenes del repo: el PDF no puede depender de que el Chromium
+serverless resuelva una URL con token.
+
 ## Lo que este cambio rompe
 
 - Las capturas de referencia de M2 (`capturas/comparacion-hoja*.png`) quedan

@@ -3,6 +3,7 @@ import { crearClienteServidor } from "@/lib/supabase/cliente-servidor";
 import { comoBloques, type FichaEstado } from "@/lib/tipos";
 import { generarPdf } from "@/lib/pdf/generar";
 import { NOTA_AL_PIE } from "@/components/ficha/FichaVista";
+import { assetsDeFamilia } from "@/app/acciones-assets";
 
 // Chromium necesita el runtime de Node, no el edge.
 export const runtime = "nodejs";
@@ -33,7 +34,7 @@ export async function GET(
 
   const { data: ficha } = await supabase
     .from("ficha")
-    .select("id, estado, version, anio, producto(sku, nombre_es, categoria)")
+    .select("id, estado, version, anio, producto(sku, nombre_es, categoria, familia_id)")
     .eq("id", id)
     .maybeSingle()
     .overrideTypes<{
@@ -41,7 +42,12 @@ export async function GET(
       estado: FichaEstado;
       version: string;
       anio: number;
-      producto: { sku: string; nombre_es: string; categoria: string | null } | null;
+      producto: {
+        sku: string;
+        nombre_es: string;
+        categoria: string | null;
+        familia_id: string | null;
+      } | null;
     }>();
 
   if (!ficha) {
@@ -65,6 +71,10 @@ export async function GET(
     );
   }
 
+  // Las imágenes salen de la librería de la familia (§7); el generador las
+  // embebe como data URI para no depender de la URL firmada.
+  const assets = await assetsDeFamilia(ficha.producto?.familia_id ?? null);
+
   try {
     // La marca de agua BORRADOR la decide FichaVista a partir del estado
     // (§5 invariante 4): acá sólo se le pasa el estado real.
@@ -83,7 +93,7 @@ export async function GET(
         tituloInterior: "Tabla de cotas y dimensiones",
         antetitulo: ficha.producto?.nombre_es ?? "",
       },
-      { producto: "/ficha/producto.png", croquis: "/ficha/croquis.png" },
+      assets.mapa,
     );
 
     return new NextResponse(Buffer.from(pdf), {

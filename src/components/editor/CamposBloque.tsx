@@ -1,7 +1,8 @@
 "use client";
 
 import { useId } from "react";
-import type { Bloque } from "@/lib/tipos";
+import type { Bloque, AssetTipo } from "@/lib/tipos";
+import type { AssetDisponible } from "@/app/acciones-assets";
 
 /** Editores de campo por tipo de bloque. Ninguno acepta HTML ni estilos. */
 
@@ -55,6 +56,54 @@ function Opcion({
   );
 }
 
+/**
+ * Elige una imagen de la librería de la familia (§7). No se sube desde acá: el
+ * asset se carga una vez en la familia y todas sus fichas lo reusan.
+ */
+function SelectorAsset({
+  etiqueta,
+  valor,
+  disponibles,
+  tipo,
+  onChange,
+}: {
+  etiqueta: string;
+  valor: string | undefined;
+  disponibles: AssetDisponible[];
+  tipo?: AssetTipo;
+  onChange: (v: string | undefined) => void;
+}) {
+  const id = useId();
+  const opciones = tipo ? disponibles.filter((a) => a.tipo === tipo) : disponibles;
+
+  if (opciones.length === 0) {
+    return (
+      <p className="aviso">
+        La familia de este producto no tiene imágenes cargadas todavía. Subilas en la ficha de la
+        familia y volvé a elegirlas acá.
+      </p>
+    );
+  }
+
+  return (
+    <div className="campo">
+      <label htmlFor={id}>{etiqueta}</label>
+      <select
+        id={id}
+        value={valor ?? ""}
+        onChange={(e) => onChange(e.target.value || undefined)}
+      >
+        <option value="">Sin imagen</option>
+        {opciones.map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.alt || `${a.tipo} sin descripción`}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function BotonQuitar({ onClick, titulo }: { onClick: () => void; titulo: string }) {
   return (
     <button type="button" className="icono" data-peligro="true" onClick={onClick} title={titulo} aria-label={titulo}>
@@ -74,9 +123,11 @@ function BotonAgregar({ onClick, children }: { onClick: () => void; children: st
 export default function CamposBloque({
   bloque,
   onChange,
+  assetsDisponibles = [],
 }: {
   bloque: Bloque;
   onChange: (b: Bloque) => void;
+  assetsDisponibles?: AssetDisponible[];
 }) {
   // Cada rama devuelve una copia con el campo cambiado: nunca se muta el
   // bloque original, para que el diff pueda comparar contra la revisión previa.
@@ -90,6 +141,10 @@ export default function CamposBloque({
           <Texto etiqueta="Subfamilia" valor={bloque.subfamilia} onChange={(v) => set({ subfamilia: v })} />
           <Texto etiqueta="Título (castellano)" valor={bloque.tituloEs} onChange={(v) => set({ tituloEs: v })} />
           <Texto etiqueta="Subtítulo (inglés)" valor={bloque.subtituloEn ?? ""} onChange={(v) => set({ subtituloEn: v })} />
+          <SelectorAsset
+            etiqueta="Foto de producto" tipo="foto" valor={bloque.fotoAssetId}
+            disponibles={assetsDisponibles} onChange={(v) => set({ fotoAssetId: v })}
+          />
         </>
       );
 
@@ -255,9 +310,10 @@ export default function CamposBloque({
     case "croquis":
       return (
         <>
-          <p className="aviso">
-            El croquis se toma de la librería de assets de la familia (M6). Acá se edita su leyenda de cotas.
-          </p>
+          <SelectorAsset
+            etiqueta="Croquis" tipo="croquis" valor={bloque.assetId}
+            disponibles={assetsDisponibles} onChange={(v) => set({ assetId: v })}
+          />
           <div className="sub-lista">
             {bloque.cotas.map((cota, i) => (
               <div className="fila-lista" key={i}>
@@ -360,7 +416,10 @@ export default function CamposBloque({
             ]}
             onChange={(v) => set({ marco: v === "si" })}
           />
-          <p className="aviso">La imagen se toma de la librería de assets de la familia.</p>
+          <SelectorAsset
+            etiqueta="Imagen" valor={bloque.assetId}
+            disponibles={assetsDisponibles} onChange={(v) => set({ assetId: v })}
+          />
         </>
       );
 
@@ -510,6 +569,10 @@ export default function CamposBloque({
             Agregar código
           </BotonAgregar>
           <Texto etiqueta="Nota (opcional)" multilinea valor={bloque.nota ?? ""} onChange={(v) => set({ nota: v })} />
+          <SelectorAsset
+            etiqueta="Imagen" valor={bloque.assetId}
+            disponibles={assetsDisponibles} onChange={(v) => set({ assetId: v })}
+          />
           <Texto etiqueta="Descripción de la imagen" valor={bloque.alt ?? ""} onChange={(v) => set({ alt: v })} />
         </>
       );

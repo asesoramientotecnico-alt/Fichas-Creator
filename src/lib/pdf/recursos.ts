@@ -132,8 +132,19 @@ export async function cssDelDocumento(): Promise<string> {
 }
 
 /** Imagen de public/ como data URI, para que no dependa de la red. */
-export async function imagenEmbebida(rutaPublica: string): Promise<string> {
-  const limpia = rutaPublica.replace(/^\//, "");
+export async function imagenEmbebida(origen: string): Promise<string> {
+  // Un asset de la librería llega como URL firmada del Storage privado; hay
+  // que bajarlo y embeberlo igual que un archivo del repo, porque el PDF no
+  // puede depender de que Chromium resuelva una URL con token (§3).
+  if (/^https?:\/\//.test(origen)) {
+    const respuesta = await fetch(origen);
+    if (!respuesta.ok) throw new Error(`el asset no se pudo bajar (${respuesta.status})`);
+    const mime = respuesta.headers.get("content-type") ?? "image/png";
+    const bin = Buffer.from(await respuesta.arrayBuffer());
+    return `data:${mime};base64,${bin.toString("base64")}`;
+  }
+
+  const limpia = origen.replace(/^\//, "");
   const bin = await readFile(path.join(raiz, "public", limpia));
   const ext = path.extname(limpia).toLowerCase();
   const mime = ext === ".png" ? "image/png" : ext === ".svg" ? "image/svg+xml" : "image/jpeg";
