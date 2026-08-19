@@ -1,0 +1,21 @@
+-- ============================================================
+-- Estado `anulada` para ficha
+-- ============================================================
+-- §5 declara cuatro estados: borrador → en_revision → aprobada → publicada.
+-- Faltaba una salida para una ficha creada por error.
+--
+-- El problema concreto: ficha_revision es append-only y su trigger bloquea el
+-- DELETE. El borrado de una ficha cascadea a sus revisiones, así que el trigger
+-- lo rechaza y una ficha con revisiones no se puede borrar nunca. Eso es
+-- correcto para auditoría — perder el historial contradiría el requisito 2 de
+-- §1 — pero dejaba la ficha equivocada visible para siempre.
+--
+-- `anulada` es borrado lógico: la ficha desaparece de los listados, conserva
+-- su historial completo, y nunca exporta PDF sin marca de agua (sólo lo hacen
+-- `aprobada` y `publicada`, según §5 invariante 4).
+--
+-- ATENCIÓN: en PostgreSQL un valor nuevo de enum no se puede USAR en la misma
+-- transacción en que se agrega. Por eso esta migración sólo agrega el valor y
+-- no lo referencia. Correrla sola, antes que cualquier otra cosa que lo use.
+
+alter type ficha_estado add value if not exists 'anulada';

@@ -39,11 +39,16 @@ export async function guardarRevision(
   return { n: data.n as number };
 }
 
+/**
+ * Transiciones válidas. Cualquier estado se puede anular, y una anulada vuelve
+ * a borrador: anular es reversible, borrar no lo sería.
+ */
 const TRANSICIONES: Record<FichaEstado, FichaEstado[]> = {
-  borrador: ["en_revision"],
-  en_revision: ["aprobada", "borrador"],
-  aprobada: ["publicada", "en_revision"],
-  publicada: ["en_revision"],
+  borrador: ["en_revision", "anulada"],
+  en_revision: ["aprobada", "borrador", "anulada"],
+  aprobada: ["publicada", "en_revision", "anulada"],
+  publicada: ["en_revision", "anulada"],
+  anulada: ["borrador"],
 };
 
 export async function cambiarEstado(

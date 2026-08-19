@@ -87,6 +87,13 @@ export default async function FichaPage({ params }: { params: Promise<{ id: stri
 
         <ControlEstado fichaId={id} actual={ficha.estado} posibles={posibles} />
 
+        {ficha.estado === "anulada" ? (
+          <p className="error" style={{ marginTop: "var(--space-4)" }}>
+            Esta ficha está anulada: no aparece en el listado. Su historial se conserva completo
+            —ficha_revision no se borra nunca— y podés restaurarla pasándola a borrador.
+          </p>
+        ) : null}
+
         {llevaMarcaDeAgua ? (
           <p className="error" style={{ borderLeftColor: "var(--famiq-orange)", marginTop: "var(--space-4)" }}>
             El PDF de esta ficha sale con marca de agua BORRADOR: sólo «Aprobada» y «Publicada»

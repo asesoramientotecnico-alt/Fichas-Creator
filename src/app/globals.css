@@ -243,3 +243,11 @@ textarea {
   gap: var(--space-4);
   margin-bottom: var(--space-5);
 }
+
+/* Una ficha anulada se lee de inmediato como fuera de circulación. */
+.estado[data-estado="anulada"] {
+  border-color: var(--famiq-red);
+  color: var(--famiq-red);
+  background: transparent;
+  text-decoration: line-through;
+}

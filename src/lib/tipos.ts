@@ -5,7 +5,18 @@
  * en la tabla de §4.
  */
 
-export type FichaEstado = "borrador" | "en_revision" | "aprobada" | "publicada";
+export type FichaEstado =
+  | "borrador"
+  | "en_revision"
+  | "aprobada"
+  | "publicada"
+  /**
+   * Borrado lógico. ficha_revision es append-only y su trigger bloquea el
+   * DELETE, así que borrar una ficha con revisiones cascadearía al trigger y
+   * fallaría. Anular la saca de los listados y conserva el historial, que es
+   * lo que pide el requisito 2 de §1.
+   */
+  | "anulada";
 export type SugerenciaEstado = "pendiente" | "aceptada" | "rechazada";
 export type SugerenciaSeveridad = "error" | "inconsistencia" | "mejora";
 export type AssetTipo = "foto" | "croquis";
@@ -21,7 +32,16 @@ export const ETIQUETA_ESTADO: Record<FichaEstado, string> = {
   en_revision: "En revisión",
   aprobada: "Aprobada",
   publicada: "Publicada",
+  anulada: "Anulada",
 };
+
+/** Las anuladas no se listan salvo que se pidan explícitamente. */
+export const ESTADOS_VISIBLES: readonly FichaEstado[] = [
+  "borrador",
+  "en_revision",
+  "aprobada",
+  "publicada",
+];
 
 // ------------------------------------------------------------
 // Bloques (§4)
