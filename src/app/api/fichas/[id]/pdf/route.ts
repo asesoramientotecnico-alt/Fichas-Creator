@@ -66,14 +66,18 @@ export async function GET(
   try {
     // La marca de agua BORRADOR la decide FichaVista a partir del estado
     // (§5 invariante 4): acá sólo se le pasa el estado real.
-    const pdf = await generarPdf(
+    // El paginado lo decide generarPdf midiendo en el navegador: la ficha
+    // ocupa las hojas que haga falta, sin recortar.
+    const { pdf, hojas } = await generarPdf(
       {
         catalogo: ficha.producto?.nombre_es ?? "",
         version: ficha.version,
         anio: ficha.anio,
         estado: ficha.estado,
         nota: "Datos orientativos. Confirmar disponibilidad con equipo técnico · famiq.com.ar",
-        hojas: [{ bloques }],
+        bloques,
+        tituloInterior: "Tabla de cotas y dimensiones",
+        antetitulo: ficha.producto?.nombre_es ?? "",
       },
       { producto: "/ficha/producto.png", croquis: "/ficha/croquis.png" },
     );
@@ -83,6 +87,7 @@ export async function GET(
         "Content-Type": "application/pdf",
         "Content-Disposition": `inline; filename="${nombreArchivo(ficha.producto?.sku, ficha.version, ficha.anio)}"`,
         "Cache-Control": "no-store",
+        "X-Hojas": String(hojas),
       },
     });
   } catch (e) {

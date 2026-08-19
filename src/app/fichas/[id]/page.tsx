@@ -5,7 +5,7 @@ import ControlEstado from "./ControlEstado";
 import { crearClienteServidor } from "@/lib/supabase/cliente-servidor";
 import { estadosPosibles } from "@/app/acciones-ficha";
 import { ESTADOS_SIN_MARCA_DE_AGUA, comoBloques, type FichaEstado } from "@/lib/tipos";
-import FichaVista from "@/components/ficha/FichaVista";
+import FichaPaginada from "@/components/ficha/FichaPaginada";
 
 interface FichaDetalle {
   id: string;
@@ -121,15 +121,17 @@ export default async function FichaPage({ params }: { params: Promise<{ id: stri
               Vista de la revisión {actual?.n}
             </h2>
             <div style={{ background: "var(--famiq-grey-200)", padding: "8mm", marginTop: "var(--space-3)", display: "flex", justifyContent: "center", overflowX: "auto" }}>
-              <FichaVista
+              <FichaPaginada
                 datos={{
                   catalogo: ficha.producto?.nombre_es ?? "",
                   version: ficha.version,
                   anio: ficha.anio,
                   estado: ficha.estado,
                   nota: "Datos orientativos. Confirmar disponibilidad con equipo técnico · famiq.com.ar",
-                  hojas: [{ bloques }],
                 }}
+                bloques={bloques}
+                tituloInterior="Tabla de cotas y dimensiones"
+                antetitulo={ficha.producto?.nombre_es ?? ""}
                 assets={{ producto: "/ficha/producto.png", croquis: "/ficha/croquis.png" }}
               />
             </div>

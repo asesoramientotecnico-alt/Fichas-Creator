@@ -9,6 +9,11 @@ export interface Hoja {
   /** Producto, en pequeño sobre el título de las hojas interiores. */
   antetitulo?: string;
   bloques: Bloque[];
+  /**
+   * Bloques anclados al pie de esta hoja. Cuando no se especifica, se
+   * deducen del tipo: así una ficha armada a mano sigue funcionando.
+   */
+  alPie?: Bloque[];
 }
 
 export interface DatosFicha {
@@ -63,11 +68,17 @@ function Cabecera({
   );
 }
 
-/** La barra destacada se ancla al pie de su hoja: así está en las dos fichas reales. */
-function separarPie(bloques: Bloque[]): [Bloque[], Bloque[]] {
+/**
+ * La barra destacada se ancla al pie de su hoja: así está en las dos fichas
+ * reales. Si el paginado ya decidió el reparto, se respeta tal cual; si la
+ * hoja viene armada a mano, se deduce del tipo.
+ */
+function separarPie(hoja: Hoja): [Bloque[], Bloque[]] {
+  if (hoja.alPie) return [hoja.bloques, hoja.alPie];
+
   const cuerpo: Bloque[] = [];
   const pie: Bloque[] = [];
-  for (const b of bloques) {
+  for (const b of hoja.bloques) {
     (b.tipo === "barra-destacada" ? pie : cuerpo).push(b);
   }
   return [cuerpo, pie];
@@ -86,7 +97,7 @@ export default function FichaVista({
   return (
     <div className="ficha">
       {datos.hojas.map((hoja, i) => {
-        const [cuerpo, pie] = separarPie(hoja.bloques);
+        const [cuerpo, pie] = separarPie(hoja);
         return (
           <article className="hoja" key={i} data-borrador={borrador}>
             <Cabecera

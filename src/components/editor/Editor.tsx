@@ -7,7 +7,8 @@ import { TIPOS_DISPONIBLES, bloqueVacio } from "@/lib/bloques-nuevos";
 import { guardarRevision } from "@/app/acciones-ficha";
 import { compararRevisiones, ETIQUETA_CLASE } from "@/lib/diff";
 import CamposBloque from "./CamposBloque";
-import FichaVista, { type DatosFicha } from "@/components/ficha/FichaVista";
+import FichaPaginada from "@/components/ficha/FichaPaginada";
+import type { DatosFicha } from "@/components/ficha/FichaVista";
 import "./editor.css";
 
 const NOMBRE_TIPO = new Map(TIPOS_DISPONIBLES.map((t) => [t.tipo, t.nombre]));
@@ -61,8 +62,6 @@ export default function Editor({
       router.refresh();
     });
   };
-
-  const previa: DatosFicha = { ...datosFicha, hojas: [{ bloques }] };
 
   return (
     <div className="editor">
@@ -160,7 +159,13 @@ export default function Editor({
 
       {verPrevia ? (
         <div style={{ gridColumn: "1 / -1", background: "var(--famiq-grey-200)", padding: "8mm", display: "flex", justifyContent: "center" }}>
-          <FichaVista datos={previa} assets={assets} />
+          <FichaPaginada
+            datos={datosFicha}
+            bloques={bloques}
+            assets={assets}
+            tituloInterior="Tabla de cotas y dimensiones"
+            antetitulo={datosFicha.catalogo}
+          />
         </div>
       ) : null}
     </div>

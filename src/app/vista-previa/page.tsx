@@ -1,12 +1,15 @@
-import FichaVista from "@/components/ficha/FichaVista";
+import FichaPaginada from "@/components/ficha/FichaPaginada";
 import { FICHA_TUERCA, ASSETS_TUERCA } from "@/lib/fixtures/tuerca-autofrenante";
 
 /**
- * Vista previa de M2 con la ficha de referencia y datos hardcodeados
- * (§8 M2 lo permite explícitamente). Sirve para el control de fidelidad
- * contra el PDF original.
+ * Vista previa de control con la ficha de referencia y datos hardcodeados
+ * (§8 M2 lo permite). Los bloques del fixture se aplanan para que el paginado
+ * automático decida el reparto, como con una ficha real.
  */
 export default function VistaPreviaPage() {
+  const { hojas: _hojas, ...datos } = FICHA_TUERCA;
+  const bloques = FICHA_TUERCA.hojas.flatMap((h) => h.bloques);
+
   return (
     <main
       style={{
@@ -17,7 +20,13 @@ export default function VistaPreviaPage() {
         justifyContent: "center",
       }}
     >
-      <FichaVista datos={FICHA_TUERCA} assets={ASSETS_TUERCA} />
+      <FichaPaginada
+        datos={datos}
+        bloques={bloques}
+        assets={ASSETS_TUERCA}
+        tituloInterior="Tabla de cotas y dimensiones"
+        antetitulo="Tuerca autofrenante con inserto de nylon"
+      />
     </main>
   );
 }

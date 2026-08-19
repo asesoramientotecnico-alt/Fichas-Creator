@@ -9,6 +9,8 @@ import type { FichaEstado } from "@/lib/tipos";
  * M4: la ficha de referencia debe salir en exactamente dos páginas A4.
  *
  * `?estado=borrador` fuerza el estado para verificar la marca de agua.
+ * `?repetir=N` duplica los bloques N veces, para verificar que el paginado
+ * abre hojas de más en vez de recortar.
  */
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -22,7 +24,29 @@ export async function GET(peticion: Request) {
     : FICHA_TUERCA.estado;
 
   try {
-    const pdf = await generarPdf({ ...FICHA_TUERCA, estado }, ASSETS_TUERCA);
+    // El fixture trae las hojas ya cortadas a mano; acá se aplanan para que
+    // el paginado automático decida el reparto, que es lo que hace la app con
+    // una ficha real.
+    const { hojas: _hojas, ...resto } = FICHA_TUERCA;
+    const base = FICHA_TUERCA.hojas.flatMap((h) => h.bloques);
+
+    // Duplicar bloques exige ids nuevos: el reparto (y el diff) los usan
+    // como identidad.
+    const repetir = Math.min(Math.max(Number(new URL(peticion.url).searchParams.get("repetir")) || 1, 1), 8);
+    const bloques = Array.from({ length: repetir }, (_, vuelta) =>
+      base.map((b) => (vuelta === 0 ? b : { ...b, id: `${b.id}-r${vuelta}` })),
+    ).flat();
+
+    const { pdf } = await generarPdf(
+      {
+        ...resto,
+        estado,
+        bloques,
+        tituloInterior: "Tabla de cotas y dimensiones",
+        antetitulo: "Tuerca autofrenante con inserto de nylon",
+      },
+      ASSETS_TUERCA,
+    );
     return new NextResponse(Buffer.from(pdf), {
       headers: {
         "Content-Type": "application/pdf",

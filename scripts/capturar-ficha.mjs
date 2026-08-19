@@ -14,8 +14,11 @@ const pagina = await navegador.newPage({
 });
 await pagina.goto("http://127.0.0.1:3000/vista-previa", { waitUntil: "networkidle" });
 await pagina.evaluate(() => document.fonts.ready);
+// El paginado se calcula tras medir: esperar a que aparezcan las hojas reales.
+await pagina.waitForSelector(".hoja:not([data-medir-hoja])", { timeout: 15000 });
 
-const hojas = pagina.locator(".hoja");
+// Excluir las hojas auxiliares que el medidor monta para medir el chrome.
+const hojas = pagina.locator(".hoja:not([data-medir-hoja])");
 const total = await hojas.count();
 console.log("hojas encontradas:", total);
 for (let i = 0; i < total; i++) {

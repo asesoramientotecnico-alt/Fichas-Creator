@@ -1,4 +1,8 @@
-import FichaVista, { type DatosFicha } from "@/components/ficha/FichaVista";
+import type { Bloque } from "@/lib/tipos";
+import FichaVista, { type DatosFicha, type Hoja } from "@/components/ficha/FichaVista";
+import Medidor from "@/components/ficha/Medidor";
+import { repartirEnHojas, type Medidas } from "@/lib/paginado";
+import { medirEnDocumento } from "@/lib/medir";
 import { cssDelDocumento, imagenEmbebida } from "./recursos";
 import { abrirNavegador } from "./navegador";
 
@@ -10,12 +14,24 @@ import { abrirNavegador } from "./navegador";
  * Chromium con setContent. El navegador no navega a la app, así que no
  * necesita la sesión del usuario ni salida a internet.
  *
+ * Son dos pasadas en la misma página: la primera mide los altos reales de
+ * cada bloque, la segunda renderiza con el reparto ya decidido. El alto no se
+ * puede estimar desde el contenido — depende del wrapping y de las métricas
+ * de la fuente — así que lo dice el navegador.
+ *
  * react-dom/server se importa de forma dinámica: el App Router rechaza su
  * import estático porque en un componente sería un error, pero acá corre
  * dentro de un route handler de Node, que es su lugar legítimo.
  */
 
-/** Assets que la ficha puede referenciar, resueltos a data URI. */
+export interface DatosSinPaginar extends Omit<DatosFicha, "hojas"> {
+  bloques: Bloque[];
+  /** Título de las hojas interiores. */
+  tituloInterior: string;
+  /** Antetítulo de las hojas interiores: el nombre del producto. */
+  antetitulo: string;
+}
+
 async function embeberAssets(rutas: Record<string, string>): Promise<Record<string, string>> {
   const pares = await Promise.all(
     Object.entries(rutas).map(async ([clave, ruta]) => {
@@ -31,10 +47,20 @@ async function embeberAssets(rutas: Record<string, string>): Promise<Record<stri
   return Object.fromEntries(pares.filter((p): p is readonly [string, string] => p !== null));
 }
 
+function documento(css: string, cuerpo: string): string {
+  return `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><style>${css}</style></head>
+<body>${cuerpo}</body>
+</html>`;
+}
+
 export async function generarPdf(
-  datos: DatosFicha,
+  datos: DatosSinPaginar,
   assets: Record<string, string> = {},
-): Promise<Uint8Array> {
+): Promise<{ pdf: Uint8Array; hojas: number }> {
+  const { renderToStaticMarkup } = await import("react-dom/server");
+
   const [css, assetsEmbebidos, logo, isotipo] = await Promise.all([
     cssDelDocumento(),
     embeberAssets(assets),
@@ -42,32 +68,54 @@ export async function generarPdf(
     imagenEmbebida("/ficha/isotipo-famiq.png"),
   ]);
 
-  const { renderToStaticMarkup } = await import("react-dom/server");
-  let cuerpo = renderToStaticMarkup(
-    <FichaVista datos={datos} assets={assetsEmbebidos} />,
-  );
-
-  // El logo y el isotipo los pone FichaVista por ruta pública; acá se
-  // reemplazan por su data URI para no depender del servidor de estáticos.
-  cuerpo = cuerpo
-    .replaceAll("/ficha/logo-famiq.png", logo)
-    .replaceAll("/ficha/isotipo-famiq.png", isotipo);
-
-  const html = `<!DOCTYPE html>
-<html lang="es">
-<head><meta charset="utf-8"><style>${css}</style></head>
-<body>${cuerpo}</body>
-</html>`;
+  const conDataUri = (html: string) =>
+    html
+      .replaceAll("/ficha/logo-famiq.png", logo)
+      .replaceAll("/ficha/isotipo-famiq.png", isotipo);
 
   const navegador = await abrirNavegador();
   try {
     const pagina = await navegador.newPage();
-    await pagina.setContent(html, { waitUntil: "load" });
-    // Con font-display:block y woff2 embebidas esto resuelve de inmediato,
-    // pero sin esperarlo la primera página puede pintarse sin la fuente.
+
+    // --- Pasada 1: medir ---
+    const htmlMedicion = documento(
+      // Sin la geometría de impresión: acá interesa el alto natural.
+      css,
+      conDataUri(
+        renderToStaticMarkup(
+          <Medidor
+            bloques={datos.bloques}
+            assets={assetsEmbebidos}
+            tituloInterior={datos.tituloInterior}
+            nota={datos.nota}
+          />,
+        ),
+      ),
+    );
+    await pagina.setContent(htmlMedicion, { waitUntil: "load" });
+    await pagina.evaluateHandle("document.fonts.ready");
+    const medidas: Medidas = await pagina.evaluate(medirEnDocumento);
+
+    const repartidas = repartirEnHojas(datos.bloques, medidas);
+
+    const hojas: Hoja[] = repartidas.map((h, i) => ({
+      bloques: h.bloques,
+      alPie: h.alPie,
+      ...(i > 0
+        ? { titulo: datos.tituloInterior, antetitulo: datos.antetitulo }
+        : {}),
+    }));
+
+    // --- Pasada 2: renderizar con el reparto decidido ---
+    const ficha: DatosFicha = { ...datos, hojas };
+    const htmlFinal = documento(
+      css,
+      conDataUri(renderToStaticMarkup(<FichaVista datos={ficha} assets={assetsEmbebidos} />)),
+    );
+    await pagina.setContent(htmlFinal, { waitUntil: "load" });
     await pagina.evaluateHandle("document.fonts.ready");
 
-    return await pagina.pdf({
+    const pdf = await pagina.pdf({
       format: "A4",
       // Los fondos grafito, las reglas rojas y las bandas grises son diseño.
       printBackground: true,
@@ -75,6 +123,8 @@ export async function generarPdf(
       preferCSSPageSize: true,
       margin: { top: "0", right: "0", bottom: "0", left: "0" },
     });
+
+    return { pdf, hojas: hojas.length };
   } finally {
     await navegador.close();
   }

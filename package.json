@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "test:diff": "node scripts/probar-diff.mjs",
     "test:e2e": "playwright test",
-    "capturar": "node scripts/capturar-ficha.mjs ./capturas"
+    "capturar": "node scripts/capturar-ficha.mjs ./capturas",
+    "test:paginado": "node scripts/probar-paginado.mjs",
+    "test:unit": "node scripts/probar-diff.mjs && node scripts/probar-paginado.mjs"
   },
   "dependencies": {
     "@sparticuz/chromium": "^149.0.0",

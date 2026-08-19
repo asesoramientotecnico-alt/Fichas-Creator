@@ -121,3 +121,55 @@ test("el PDF de una ficha real exige sesión y respeta su estado", async ({ page
     expect(Math.abs(alto - 297)).toBeLessThan(1);
   }
 });
+
+test("el paginado abre hojas de más en vez de recortar", async ({ request }) => {
+  // El fixture entra en dos hojas. Duplicando su contenido, el paginado tiene
+  // que abrir más hojas — antes se recortaba en silencio.
+  const conteos: number[] = [];
+  for (const repetir of [1, 2, 3]) {
+    const r = await request.get(`/api/vista-previa/pdf?repetir=${repetir}`);
+    expect(r.status()).toBe(200);
+    const info = inspeccionar(await r.body());
+    conteos.push(info.paginas);
+
+    // Ninguna hoja en blanco, y todas A4, en cualquier cantidad.
+    for (const n of info.caracteres) expect(n).toBeGreaterThan(80);
+    for (const [ancho, alto] of info.tamanos) {
+      expect(Math.abs(ancho - 210)).toBeLessThan(1);
+      expect(Math.abs(alto - 297)).toBeLessThan(1);
+    }
+  }
+
+  expect(conteos[0]).toBe(2);
+  // Más contenido, más hojas: monótono y estrictamente creciente.
+  expect(conteos[1]).toBeGreaterThan(conteos[0]);
+  expect(conteos[2]).toBeGreaterThan(conteos[1]);
+});
+
+test("la pantalla pagina igual que el PDF", async ({ page, request }) => {
+  // Si midieran distinto, la vista previa mentiría sobre el PDF.
+  await page.goto("/vista-previa");
+  await page.waitForSelector(".hoja:not([data-medir-hoja])");
+  await page.evaluate(() => document.fonts.ready);
+  const enPantalla = await page.locator(".hoja:not([data-medir-hoja])").count();
+
+  const enPdf = inspeccionar(await (await request.get("/api/vista-previa/pdf")).body()).paginas;
+
+  expect(enPantalla).toBe(enPdf);
+});
+
+test("cada hoja lleva su numeración correcta", async ({ request }) => {
+  const r = await request.get("/api/vista-previa/pdf?repetir=2");
+  const dir = mkdtempSync(join(tmpdir(), "pag-"));
+  const archivo = join(dir, "f.pdf");
+  writeFileSync(archivo, await r.body());
+
+  const py = `
+import pymupdf, json
+doc = pymupdf.open(${JSON.stringify(archivo)})
+print(json.dumps([f"{i+1} / {len(doc)}" in p.get_text() for i, p in enumerate(doc)]))
+`;
+  const pies: boolean[] = JSON.parse(execFileSync("python3", ["-c", py], { encoding: "utf8" }));
+  expect(pies.length).toBeGreaterThan(2);
+  for (const ok of pies) expect(ok).toBe(true);
+});
