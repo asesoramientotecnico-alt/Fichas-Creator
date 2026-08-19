@@ -5,7 +5,8 @@ import { generarPdf } from "@/lib/pdf/generar";
 
 // Chromium necesita el runtime de Node, no el edge.
 export const runtime = "nodejs";
-// Un PDF con muchas filas puede pasar el default de 10 s.
+// Un PDF con muchas filas puede pasar el default de 10 s. 60 s es además el
+// techo del plan Hobby de Vercel; localmente el render tarda menos de 3 s.
 export const maxDuration = 60;
 
 function nombreArchivo(sku: string | undefined, version: string, anio: number) {

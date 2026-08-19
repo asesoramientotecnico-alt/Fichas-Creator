@@ -11,7 +11,11 @@ import { revisarFicha, ErrorRevision } from "@/lib/ia/revisor";
  * hallazgos anotados para que una persona los acepte o rechace uno por uno.
  */
 export const runtime = "nodejs";
-export const maxDuration = 120;
+// 60 s es el techo del plan Hobby de Vercel; declarar más hace fallar el
+// deploy ahí. En Pro se puede subir a 300. Si la revisión no entra en el
+// límite del plan, la salida es bajar `effort` en el revisor o pasarla a un
+// trabajo asincrónico — no subir este número a ciegas.
+export const maxDuration = 60;
 
 export async function POST(
   _peticion: Request,

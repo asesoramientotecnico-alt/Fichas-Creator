@@ -13,6 +13,20 @@ import { SISTEMA, mensajeUsuario } from "./prompt";
 // código, pero el valor por omisión es el que dice el documento.
 const MODELO = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
 
+/**
+ * Esfuerzo del modelo. Por omisión `low`, y no por ahorrar: medido sobre la
+ * ficha de referencia, `low` tarda 23 s y detecta los cuatro hallazgos de §6,
+ * mientras `medium` tarda 107 s y `high` 220 s sin encontrar más — `high`
+ * encontró incluso uno menos. Y 60 s es el techo de una función serverless en
+ * el plan Hobby de Vercel, así que un esfuerzo mayor no llegaría a terminar.
+ */
+const ESFUERZO = (process.env.ANTHROPIC_EFFORT ?? "low") as
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh"
+  | "max";
+
 const SEVERIDADES = ["error", "inconsistencia", "mejora"] as const;
 
 const Hallazgo = z.object({
@@ -62,7 +76,7 @@ function clienteAnthropic(): ClienteRevision {
         // razonamiento, no extracción.
         thinking: { type: "adaptive" },
         output_config: {
-          effort: "high",
+          effort: ESFUERZO,
           format: zodOutputFormat(Respuesta),
         },
         messages: [{ role: "user", content: usuario }],
