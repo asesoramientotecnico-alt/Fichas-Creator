@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Cabecera from "@/components/Cabecera";
 import ControlEstado from "./ControlEstado";
+import PanelHallazgos, { type Sugerencia } from "./PanelHallazgos";
 import { crearClienteServidor } from "@/lib/supabase/cliente-servidor";
 import { estadosPosibles } from "@/app/acciones-ficha";
 import { ESTADOS_SIN_MARCA_DE_AGUA, comoBloques, type FichaEstado } from "@/lib/tipos";
@@ -37,6 +38,13 @@ export default async function FichaPage({ params }: { params: Promise<{ id: stri
     .overrideTypes<
       { id: string; n: number; comentario: string | null; created_at: string; autor_id: string; bloques: unknown }[]
     >();
+
+  const { data: sugerencias } = await supabase
+    .from("sugerencia_ia")
+    .select("id, bloque_id, campo, texto_original, texto_propuesto, motivo, severidad, estado, decidido_at, revision_id")
+    .eq("revision_id", revisiones?.[0]?.id ?? "00000000-0000-0000-0000-000000000000")
+    .order("severidad")
+    .overrideTypes<Sugerencia[]>();
 
   const actual = revisiones?.[0];
   const bloques = comoBloques(actual?.bloques);
@@ -84,6 +92,8 @@ export default async function FichaPage({ params }: { params: Promise<{ id: stri
             exportan sin marca (§5).
           </p>
         ) : null}
+
+        <PanelHallazgos fichaId={id} sugerencias={sugerencias ?? []} />
 
         <h2 className="eyebrow" style={{ color: "var(--fg-3)", marginTop: "var(--space-6)" }}>
           Historial de revisiones
