@@ -21,14 +21,16 @@ const medio = (id: string): Bloque =>
   ({ id, tipo: "chips", ancho: "medio", etiqueta: id, items: [] } as Bloque);
 const barra = (id: string): Bloque =>
   ({ id, tipo: "barra-destacada", ancho: "completo", etiqueta: id, valor: "" } as Bloque);
+const tercio = (id: string): Bloque =>
+  ({ id, tipo: "chips", ancho: "un-tercio", etiqueta: id, items: [] } as Bloque);
+const dosTercios = (id: string, filasGrilla?: number): Bloque =>
+  ({ id, tipo: "imagen", ancho: "dos-tercios", filasGrilla, etiqueta: id, alt: "" } as Bloque);
 
-// Hoja de 1000px útiles, chrome de 100 arriba y 50 abajo -> 850 por hoja.
+// 850px útiles por hoja, iguales en la primera y en las interiores.
 const med = (altos: Record<string, number>): Medidas => ({
   altoBloque: altos,
-  altoCabeceraPrimera: 100,
-  altoCabeceraInterior: 100,
-  altoPie: 50,
-  altoUtil: 1000,
+  altoUtilPrimera: 850,
+  altoUtilInterior: 850,
   separacionFilas: 20,
   separacionPie: 20,
 });
@@ -77,6 +79,56 @@ chk("la separacion entre filas cuenta en el reparto", () => {
   const bs = [completo("a"), completo("b")];
   const h = repartirEnHojas(bs, med({ a: 420, b: 420 }));
   return h.length === 2;
+});
+
+chk("tres tercios comparten una fila", () => {
+  const filas = agruparEnFilas([tercio("a"), tercio("b"), tercio("c")], { a: 10, b: 40, c: 20 });
+  return filas.length === 1 && filas[0].bloques.length === 3 && filas[0].alto === 40;
+});
+
+chk("dos tercios mas un tercio llenan la fila y el siguiente abre otra", () => {
+  const filas = agruparEnFilas(
+    [dosTercios("a"), tercio("b"), tercio("c")],
+    { a: 30, b: 10, c: 10 },
+  );
+  return filas.length === 2 && filas[0].bloques.length === 2 && filas[1].bloques.length === 1;
+});
+
+chk("filasGrilla apila los bloques angostos al costado del alto", () => {
+  const filas = agruparEnFilas(
+    [dosTercios("croquis", 2), tercio("a"), tercio("b"), completo("z")],
+    { croquis: 300, a: 200, b: 250, z: 100 },
+    20,
+  );
+  // El croquis y los dos angostos son UNA fila; su alto es el de la columna
+  // apilada (200 + 20 + 250), que supera al del croquis.
+  return (
+    filas.length === 2 &&
+    filas[0].bloques.length === 3 &&
+    filas[0].alto === 470 &&
+    filas[1].bloques[0].id === "z"
+  );
+});
+
+chk("filasGrilla no se lleva un bloque que no cabe al costado", () => {
+  const filas = agruparEnFilas(
+    [dosTercios("croquis", 2), completo("ancho")],
+    { croquis: 300, ancho: 100 },
+    20,
+  );
+  return filas.length === 2 && filas[0].bloques.length === 1 && filas[1].bloques.length === 1;
+});
+
+chk("la primera hoja puede tener menos lugar que las interiores", () => {
+  const medidas: Medidas = {
+    altoBloque: { a: 300, b: 300 },
+    altoUtilPrimera: 400,
+    altoUtilInterior: 850,
+    separacionFilas: 20,
+    separacionPie: 20,
+  };
+  const h = repartirEnHojas([completo("a"), completo("b")], medidas);
+  return h.length === 2 && h[0].bloques.length === 1 && h[1].bloques.length === 1;
 });
 
 chk("la barra destacada se ancla al pie de la ultima hoja", () => {

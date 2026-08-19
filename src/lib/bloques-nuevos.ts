@@ -17,6 +17,10 @@ export const TIPOS_DISPONIBLES: { tipo: TipoBloque; nombre: string; descripcion:
   { tipo: "tabla-dim", nombre: "Tablas dimensionales", descripcion: "Una o dos tablas con su unidad." },
   { tipo: "barra-destacada", nombre: "Barra destacada", descripcion: "Etiqueta y valor sobre banda gris. Va al pie de la hoja." },
   { tipo: "chart", nombre: "Gráfico", descripcion: "Curvas desde una tabla de datos. Hasta 4 series. Se dibuja en el servidor, sin IA." },
+  { tipo: "imagen", nombre: "Imagen", descripcion: "Imagen con rótulo. Ej. un despiece o una curva de presión / temperatura." },
+  { tipo: "lista-componentes", nombre: "Lista de componentes", descripcion: "Ítem numerado → componente → material → cantidad. Se reparte en dos columnas." },
+  { tipo: "tabla-ancha", nombre: "Tabla de cotas", descripcion: "Tabla a ancho completo con banda oscura y nota que define los símbolos." },
+  { tipo: "codigos", nombre: "Códigos", descripcion: "Pares código → medida en dos columnas, con imagen y nota. Ej. un kit de repuestos." },
 ];
 
 let contador = 0;
@@ -66,6 +70,27 @@ export function bloqueVacio(tipo: TipoBloque): Bloque {
         id, tipo, ancho: "completo", etiqueta: "Nuevo gráfico",
         series: [{ nombre: "Serie 1", puntos: [{ x: 0, y: 0 }] }],
         etiquetaX: "", etiquetaY: "",
+      };
+    case "imagen":
+      return { id, tipo, ancho: "medio", etiqueta: "Nueva imagen", alt: "", marco: false };
+    case "lista-componentes":
+      return {
+        id, tipo, ancho: "completo", etiqueta: "Lista de componentes",
+        columnas: { item: "Ítem", componente: "Componente", material: "Material", cantidad: "Cant." },
+        items: [{ n: "1", componente: "", material: "", cantidad: "" }],
+      };
+    case "tabla-ancha":
+      return {
+        id, tipo, ancho: "completo", etiqueta: "Dimensiones y códigos",
+        columnas: [{ titulo: "" }, { titulo: "" }, { titulo: "", alineacion: "derecha" }],
+        filas: [["", "", ""]],
+        nota: "",
+      };
+    case "codigos":
+      return {
+        id, tipo, ancho: "completo", etiqueta: "Repuestos",
+        pares: [{ codigo: "", medida: "" }],
+        alt: "", nota: "",
       };
   }
 }

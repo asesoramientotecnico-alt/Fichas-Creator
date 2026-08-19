@@ -8,6 +8,7 @@ import { crearClienteServidor } from "@/lib/supabase/cliente-servidor";
 import { estadosPosibles } from "@/app/acciones-ficha";
 import { ESTADOS_SIN_MARCA_DE_AGUA, comoBloques, type FichaEstado } from "@/lib/tipos";
 import FichaPaginada from "@/components/ficha/FichaPaginada";
+import { NOTA_AL_PIE } from "@/components/ficha/FichaVista";
 
 interface FichaDetalle {
   id: string;
@@ -15,7 +16,7 @@ interface FichaDetalle {
   version: string;
   anio: number;
   created_at: string;
-  producto: { sku: string; nombre_es: string; nombre_en: string | null } | null;
+  producto: { sku: string; nombre_es: string; nombre_en: string | null; categoria: string | null } | null;
 }
 
 export default async function FichaPage({ params }: { params: Promise<{ id: string }> }) {
@@ -24,7 +25,7 @@ export default async function FichaPage({ params }: { params: Promise<{ id: stri
 
   const { data: ficha } = await supabase
     .from("ficha")
-    .select("id, estado, version, anio, created_at, producto(sku, nombre_es, nombre_en)")
+    .select("id, estado, version, anio, created_at, producto(sku, nombre_es, nombre_en, categoria)")
     .eq("id", id)
     .maybeSingle()
     .overrideTypes<FichaDetalle>();
@@ -143,11 +144,12 @@ export default async function FichaPage({ params }: { params: Promise<{ id: stri
             <div style={{ background: "var(--famiq-grey-200)", padding: "8mm", marginTop: "var(--space-3)", display: "flex", justifyContent: "center", overflowX: "auto" }}>
               <FichaPaginada
                 datos={{
-                  catalogo: ficha.producto?.nombre_es ?? "",
+                  familia: ficha.producto?.categoria ?? "",
                   version: ficha.version,
+                  revision: actual?.n ?? 1,
                   anio: ficha.anio,
                   estado: ficha.estado,
-                  nota: "Datos orientativos. Confirmar disponibilidad con equipo técnico · famiq.com.ar",
+                  nota: NOTA_AL_PIE,
                 }}
                 bloques={bloques}
                 tituloInterior="Tabla de cotas y dimensiones"

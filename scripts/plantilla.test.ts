@@ -1,6 +1,7 @@
 /** Pruebas de la plantilla de familia. npm run test:plantilla */
 import { vaciarParaPlantilla, instanciarPlantilla } from "../src/lib/plantilla";
 import { FICHA_TUERCA } from "../src/lib/fixtures/tuerca-autofrenante";
+import { BLOQUES_VALVULA } from "../src/lib/fixtures/valvula-esferica";
 import type { Bloque } from "../src/lib/tipos";
 
 const casos: [string, () => boolean][] = [];
@@ -98,6 +99,60 @@ chk("no muta los bloques originales", () => {
   const antes = JSON.stringify(BLOQUES);
   vaciarParaPlantilla(BLOQUES);
   return JSON.stringify(BLOQUES) === antes;
+});
+
+// ------------------------------------------------------------
+// Tipos nuevos de la plantilla V26
+// ------------------------------------------------------------
+
+chk("V26: conserva el tipo y el orden de los bloques nuevos", () => {
+  const p = vaciarParaPlantilla(BLOQUES_VALVULA);
+  return p.length === BLOQUES_VALVULA.length &&
+         p.map((b) => b.tipo).join() === BLOQUES_VALVULA.map((b) => b.tipo).join();
+});
+
+chk("imagen: conserva el rótulo y el marco, suelta el asset", () => {
+  const img = de<Extract<Bloque, {tipo:"imagen"}>>(vaciarParaPlantilla(BLOQUES_VALVULA), "imagen");
+  return img.assetId === undefined && img.etiqueta === "Presión / temperatura" &&
+         img.sufijo === '1/4" – 4"';
+});
+
+chk("lista-componentes: el despiece es estructura, la cantidad es dato", () => {
+  const lc = de<Extract<Bloque, {tipo:"lista-componentes"}>>(
+    vaciarParaPlantilla(BLOQUES_VALVULA), "lista-componentes");
+  return lc.items.length === 17 &&
+         lc.items[0].componente === "Cuerpo" && lc.items[0].material === "A351-CF8M" &&
+         lc.items.every((i) => i.cantidad === "") &&
+         lc.columnas.componente === "Componente";
+});
+
+chk("tabla-ancha: conserva columnas y nota, vacía las filas", () => {
+  const ta = de<Extract<Bloque, {tipo:"tabla-ancha"}>>(
+    vaciarParaPlantilla(BLOQUES_VALVULA), "tabla-ancha");
+  return ta.columnas.length === 13 && ta.nota.includes("paso de esfera") &&
+         ta.filas.length === 1 && ta.filas[0].every((c) => c === "") &&
+         ta.filas[0].length === ta.columnas.length;
+});
+
+chk("codigos: se vacían los pares y el asset, queda la nota", () => {
+  const cd = de<Extract<Bloque, {tipo:"codigos"}>>(
+    vaciarParaPlantilla(BLOQUES_VALVULA), "codigos");
+  return cd.pares.length === 0 && cd.assetId === undefined &&
+         (cd.nota ?? "").includes("Cada kit incluye");
+});
+
+chk("V26: no quedan códigos ni medidas de la válvula en la plantilla", () => {
+  const json = JSON.stringify(vaciarParaPlantilla(BLOQUES_VALVULA));
+  return !json.includes("351636") && !json.includes("350834") &&
+         !json.includes("115,2") && !json.includes("Válvula esférica 3 cuerpos");
+});
+
+chk("V26: la disposición y el span de filas sobreviven", () => {
+  const p = vaciarParaPlantilla(BLOQUES_VALVULA);
+  const despiece = p.find((b) => b.filasGrilla === 2);
+  const verticales = p.filter((b) => b.tipo === "tabla-kv" && b.orientacion === "vertical");
+  return despiece?.ancho === "dos-tercios" && verticales.length === 2 &&
+         p.some((b) => b.tituloHoja === "Tabla de cotas y códigos");
 });
 
 let ok = 0;

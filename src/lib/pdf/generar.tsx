@@ -1,7 +1,7 @@
 import type { Bloque } from "@/lib/tipos";
 import FichaVista, { type DatosFicha, type Hoja } from "@/components/ficha/FichaVista";
 import Medidor from "@/components/ficha/Medidor";
-import { repartirEnHojas, type Medidas } from "@/lib/paginado";
+import { repartirEnHojas, tituloDeHoja, type Medidas } from "@/lib/paginado";
 import { medirEnDocumento } from "@/lib/medir";
 import { cssDelDocumento, imagenEmbebida } from "./recursos";
 import { abrirNavegador } from "./navegador";
@@ -61,17 +61,20 @@ export async function generarPdf(
 ): Promise<{ pdf: Uint8Array; hojas: number }> {
   const { renderToStaticMarkup } = await import("react-dom/server");
 
-  const [css, assetsEmbebidos, logo, isotipo] = await Promise.all([
+  // La píldora de unidad de negocio es un asset más: si no se embebe, el
+  // Chromium serverless no la resuelve y la cabecera sale sin ella.
+  const conPildora = datos.pildoraSrc
+    ? { ...assets, __pildora: datos.pildoraSrc }
+    : assets;
+
+  const [css, assetsEmbebidos, logo] = await Promise.all([
     cssDelDocumento(),
-    embeberAssets(assets),
+    embeberAssets(conPildora),
     imagenEmbebida("/ficha/logo-famiq.png"),
-    imagenEmbebida("/ficha/isotipo-famiq.png"),
   ]);
 
-  const conDataUri = (html: string) =>
-    html
-      .replaceAll("/ficha/logo-famiq.png", logo)
-      .replaceAll("/ficha/isotipo-famiq.png", isotipo);
+  const conDataUri = (html: string) => html.replaceAll("/ficha/logo-famiq.png", logo);
+  const pildoraSrc = assetsEmbebidos.__pildora ?? undefined;
 
   const navegador = await abrirNavegador();
   try {
@@ -87,7 +90,14 @@ export async function generarPdf(
             bloques={datos.bloques}
             assets={assetsEmbebidos}
             tituloInterior={datos.tituloInterior}
+            antetitulo={datos.antetitulo}
             nota={datos.nota}
+            familia={datos.familia}
+            pildoraSrc={pildoraSrc}
+            pildoraAlt={datos.pildoraAlt}
+            version={datos.version}
+            revision={datos.revision}
+            anio={datos.anio}
           />,
         ),
       ),
@@ -102,12 +112,15 @@ export async function generarPdf(
       bloques: h.bloques,
       alPie: h.alPie,
       ...(i > 0
-        ? { titulo: datos.tituloInterior, antetitulo: datos.antetitulo }
+        ? {
+            titulo: tituloDeHoja(h.bloques, datos.tituloInterior),
+            antetitulo: datos.antetitulo,
+          }
         : {}),
     }));
 
     // --- Pasada 2: renderizar con el reparto decidido ---
-    const ficha: DatosFicha = { ...datos, hojas };
+    const ficha: DatosFicha = { ...datos, pildoraSrc, hojas };
     const htmlFinal = documento(
       css,
       conDataUri(renderToStaticMarkup(<FichaVista datos={ficha} assets={assetsEmbebidos} />)),

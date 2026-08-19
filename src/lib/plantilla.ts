@@ -84,6 +84,27 @@ export function vaciarParaPlantilla(bloques: Bloque[]): Bloque[] {
 
       case "chart":
         return { ...bloque, id, series: [] };
+
+      case "imagen":
+        // El rótulo y el marco son de la familia; la imagen se elige por ficha.
+        return { ...bloque, id, assetId: undefined };
+
+      case "lista-componentes":
+        // El despiece de una familia es siempre el mismo, así que los ítems y
+        // sus materiales son estructura. Sólo se vacía la cantidad, que cambia
+        // con la medida (una válvula de 2 1/2" lleva 6 pernos y una de 1/2", 4).
+        return {
+          ...bloque, id,
+          items: bloque.items.map((i) => ({ ...i, cantidad: "" })),
+        };
+
+      case "tabla-ancha":
+        // Se conservan columnas y nota —definen cómo se lee la tabla— y queda
+        // una fila vacía para no arrancar de cero.
+        return { ...bloque, id, filas: [bloque.columnas.map(() => "")] };
+
+      case "codigos":
+        return { ...bloque, id, pares: [], assetId: undefined };
     }
   });
 }

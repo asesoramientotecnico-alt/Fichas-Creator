@@ -1,5 +1,6 @@
 import type { Bloque } from "@/lib/tipos";
 import type { DatosFicha } from "@/components/ficha/FichaVista";
+import { NOTA_AL_PIE } from "@/lib/ficha-textos";
 
 /**
  * Ficha de referencia: "Tuerca autofrenante con inserto de nylon".
@@ -176,11 +177,12 @@ const HOJA_2: Bloque[] = [
 ];
 
 export const FICHA_TUERCA: DatosFicha = {
-  catalogo: "Tuercas de acero inoxidable · Tuerca hexagonal",
-  version: "1.0",
+  familia: "Tuercas de acero inoxidable",
+  version: "V26",
+  revision: 1,
   anio: 2026,
   estado: "publicada",
-  nota: "Datos orientativos. Confirmar disponibilidad con equipo técnico · famiq.com.ar",
+  nota: NOTA_AL_PIE,
   hojas: [
     { bloques: HOJA_1 },
     {

@@ -1,12 +1,17 @@
 import type { Bloque, FichaEstado } from "@/lib/tipos";
 import { ESTADOS_SIN_MARCA_DE_AGUA } from "@/lib/tipos";
+import { identificacion } from "@/lib/ficha-textos";
 import { RenderBloque } from "./Bloques";
 import "./ficha.css";
+
+// Se reexportan para no romper los imports existentes; viven en ficha-textos
+// porque este módulo arrastra CSS.
+export { NOTA_AL_PIE, identificacion } from "@/lib/ficha-textos";
 
 export interface Hoja {
   /** Título grande de la hoja. Sólo lo llevan las hojas interiores. */
   titulo?: string;
-  /** Producto, en pequeño sobre el título de las hojas interiores. */
+  /** Producto, en rojo al lado del título de las hojas interiores. */
   antetitulo?: string;
   bloques: Bloque[];
   /**
@@ -17,61 +22,85 @@ export interface Hoja {
 }
 
 export interface DatosFicha {
-  catalogo: string;
+  /** Familia del producto: la línea gris de la cabecera de la primera hoja. */
+  familia: string;
+  /** Píldora de unidad de negocio, arriba a la derecha de la primera hoja. */
+  pildoraSrc?: string;
+  pildoraAlt?: string;
   version: string;
+  /** Número de la revisión que se está mostrando (`ficha_revision.n`). */
+  revision: number;
   anio: number;
   estado: FichaEstado;
   nota: string;
   hojas: Hoja[];
 }
 
-function Cabecera({
-  hoja,
-  catalogo,
+export function CabeceraPrimera({
+  familia,
+  pildoraSrc,
+  pildoraAlt,
   version,
+  revision,
   anio,
-  esPrimera,
 }: {
-  hoja: Hoja;
-  catalogo: string;
+  familia: string;
+  pildoraSrc?: string;
+  pildoraAlt?: string;
   version: string;
+  revision: number;
   anio: number;
-  esPrimera: boolean;
 }) {
   return (
     <>
       <header className="ficha-cabecera">
-        {esPrimera ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img className="logo" src="/ficha/logo-famiq.png" alt="Famiq — Aceros inoxidables" />
-        ) : (
-          <div className="titulo-hoja">
-            {hoja.antetitulo ? <span className="antetitulo">{hoja.antetitulo}</span> : null}
-            <h2>{hoja.titulo}</h2>
-          </div>
-        )}
-
-        {esPrimera ? (
-          <div className="identificacion">
-            <span className="catalogo">{catalogo}</span>
-            <span className="version">
-              Versión {version} · {anio}
-            </span>
-          </div>
-        ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img className="isotipo" src="/ficha/isotipo-famiq.png" alt="Famiq" />
-        )}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="logo" src="/ficha/logo-famiq.png" alt="Famiq — Aceros inoxidables" />
+        <div className="marca-negocio">
+          {pildoraSrc ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className="pildora" src={pildoraSrc} alt={pildoraAlt ?? ""} />
+          ) : null}
+          <p className="familia">{familia}</p>
+        </div>
       </header>
-      <div className="regla-marca" />
+      <div className="ficha-rotulo">
+        <p className="rotulo">Ficha técnica</p>
+        <p className="identificacion">{identificacion(version, revision, anio)}</p>
+      </div>
+    </>
+  );
+}
+
+export function CabeceraInterior({
+  titulo,
+  antetitulo,
+}: {
+  titulo?: string;
+  antetitulo?: string;
+}) {
+  return (
+    <>
+      <header className="ficha-cabecera" data-interior="true">
+        <div className="titulo-hoja">
+          <h2>{titulo}</h2>
+          {antetitulo ? <span className="producto">{antetitulo}</span> : null}
+        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="logo-interior" src="/ficha/logo-famiq.png" alt="Famiq" />
+      </header>
+      <div className="regla-marca">
+        <span className="tramo-gris" />
+        <span className="tramo-rojo" />
+      </div>
     </>
   );
 }
 
 /**
- * La barra destacada se ancla al pie de su hoja: así está en las dos fichas
- * reales. Si el paginado ya decidió el reparto, se respeta tal cual; si la
- * hoja viene armada a mano, se deduce del tipo.
+ * La barra destacada se ancla al pie de su hoja. Si el paginado ya decidió el
+ * reparto, se respeta tal cual; si la hoja viene armada a mano, se deduce del
+ * tipo.
  */
 function separarPie(hoja: Hoja): [Bloque[], Bloque[]] {
   if (hoja.alPie) return [hoja.bloques, hoja.alPie];
@@ -98,15 +127,26 @@ export default function FichaVista({
     <div className="ficha">
       {datos.hojas.map((hoja, i) => {
         const [cuerpo, pie] = separarPie(hoja);
+        const esPrimera = i === 0;
         return (
-          <article className="hoja" key={i} data-borrador={borrador}>
-            <Cabecera
-              hoja={hoja}
-              catalogo={datos.catalogo}
-              version={datos.version}
-              anio={datos.anio}
-              esPrimera={i === 0}
-            />
+          <article
+            className="hoja"
+            key={i}
+            data-borrador={borrador}
+            data-primera={esPrimera ? "true" : undefined}
+          >
+            {esPrimera ? (
+              <CabeceraPrimera
+                familia={datos.familia}
+                pildoraSrc={datos.pildoraSrc}
+                pildoraAlt={datos.pildoraAlt}
+                version={datos.version}
+                revision={datos.revision}
+                anio={datos.anio}
+              />
+            ) : (
+              <CabeceraInterior titulo={hoja.titulo} antetitulo={hoja.antetitulo} />
+            )}
 
             <div className="grilla-bloques">
               {cuerpo.map((bloque) => (

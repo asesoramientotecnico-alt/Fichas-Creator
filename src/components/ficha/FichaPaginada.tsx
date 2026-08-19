@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import type { Bloque } from "@/lib/tipos";
-import { repartirEnHojas, type Medidas } from "@/lib/paginado";
+import { repartirEnHojas, tituloDeHoja, type Medidas } from "@/lib/paginado";
 import { medirEnDocumento } from "@/lib/medir";
 import FichaVista, { type DatosFicha, type Hoja } from "./FichaVista";
 import Medidor from "./Medidor";
@@ -39,14 +39,16 @@ export default function FichaPaginada({
     const medidas: Medidas = medirEnDocumento();
     // Sin alto útil el reparto no tiene sentido: pasa si el medidor todavía
     // no llegó al DOM. Se reintenta cuando las fuentes terminan de cargar.
-    if (medidas.altoUtil <= 0) return;
+    if (medidas.altoUtilPrimera <= 0) return;
 
     const repartidas = repartirEnHojas(bloques, medidas);
     setHojas(
       repartidas.map((h, i) => ({
         bloques: h.bloques,
         alPie: h.alPie,
-        ...(i > 0 ? { titulo: tituloInterior, antetitulo } : {}),
+        ...(i > 0
+          ? { titulo: tituloDeHoja(h.bloques, tituloInterior), antetitulo }
+          : {}),
       })),
     );
   }, [bloques, tituloInterior, antetitulo]);
@@ -84,7 +86,14 @@ export default function FichaPaginada({
             bloques={bloques}
             assets={assets}
             tituloInterior={tituloInterior}
+            antetitulo={antetitulo}
             nota={datos.nota}
+            familia={datos.familia}
+            pildoraSrc={datos.pildoraSrc}
+            pildoraAlt={datos.pildoraAlt}
+            version={datos.version}
+            revision={datos.revision}
+            anio={datos.anio}
           />
         </div>
       ) : null}

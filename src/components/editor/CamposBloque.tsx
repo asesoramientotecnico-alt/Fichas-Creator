@@ -29,6 +29,32 @@ function Texto({
   );
 }
 
+function Opcion({
+  etiqueta,
+  valor,
+  opciones,
+  onChange,
+}: {
+  etiqueta: string;
+  valor: string;
+  opciones: { valor: string; nombre: string }[];
+  onChange: (v: string) => void;
+}) {
+  const id = useId();
+  return (
+    <div className="campo">
+      <label htmlFor={id}>{etiqueta}</label>
+      <select id={id} value={valor} onChange={(e) => onChange(e.target.value)}>
+        {opciones.map((o) => (
+          <option key={o.valor} value={o.valor}>
+            {o.nombre}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function BotonQuitar({ onClick, titulo }: { onClick: () => void; titulo: string }) {
   return (
     <button type="button" className="icono" data-peligro="true" onClick={onClick} title={titulo} aria-label={titulo}>
@@ -71,6 +97,17 @@ export default function CamposBloque({
       return (
         <>
           <Texto etiqueta="Etiqueta de la sección" valor={bloque.etiqueta} onChange={(v) => set({ etiqueta: v })} />
+          <Texto etiqueta="Sufijo (opcional)" valor={bloque.sufijo ?? ""} placeholder='Ej. 1/4" – 4"'
+            onChange={(v) => set({ sufijo: v })} />
+          <Opcion
+            etiqueta="Disposición"
+            valor={bloque.orientacion ?? "horizontal"}
+            opciones={[
+              { valor: "horizontal", nombre: "Rótulo a la izquierda del valor" },
+              { valor: "vertical", nombre: "Rótulo arriba del valor (columna angosta)" },
+            ]}
+            onChange={(v) => set({ orientacion: v as "horizontal" | "vertical" })}
+          />
           <div className="sub-lista">
             {bloque.filas.map((fila, i) => (
               <div className="fila-lista" key={i}>
@@ -118,6 +155,7 @@ export default function CamposBloque({
       return (
         <>
           <Texto etiqueta="Etiqueta de la tabla" valor={bloque.etiqueta} onChange={(v) => set({ etiqueta: v })} />
+          <Texto etiqueta="Sufijo (opcional)" valor={bloque.sufijo ?? ""} onChange={(v) => set({ sufijo: v })} />
           <p className="campo" style={{ margin: 0 }}><label>Columnas</label></p>
           <div className="sub-lista">
             {bloque.columnas.map((col, i) => (
@@ -301,6 +339,178 @@ export default function CamposBloque({
           <BotonAgregar onClick={() => set({
             tablas: [...bloque.tablas, { etiqueta: "", unidad: "mm", columnas: ["", "", ""], filas: [["", "", ""]] }],
           })}>Agregar tabla</BotonAgregar>
+        </>
+      );
+
+    case "imagen":
+      return (
+        <>
+          <Texto etiqueta="Etiqueta de la sección (vacía = imagen sin rótulo)"
+            valor={bloque.etiqueta ?? ""} onChange={(v) => set({ etiqueta: v })} />
+          <Texto etiqueta="Sufijo (opcional)" valor={bloque.sufijo ?? ""} placeholder='Ej. 1/4" – 4"'
+            onChange={(v) => set({ sufijo: v })} />
+          <Texto etiqueta="Descripción para lectores de pantalla" valor={bloque.alt}
+            placeholder="Curva de presión / temperatura" onChange={(v) => set({ alt: v })} />
+          <Opcion
+            etiqueta="Marco"
+            valor={bloque.marco ? "si" : "no"}
+            opciones={[
+              { valor: "no", nombre: "Sin marco" },
+              { valor: "si", nombre: "Con marco" },
+            ]}
+            onChange={(v) => set({ marco: v === "si" })}
+          />
+          <p className="aviso">La imagen se toma de la librería de assets de la familia.</p>
+        </>
+      );
+
+    case "lista-componentes":
+      return (
+        <>
+          <Texto etiqueta="Etiqueta de la sección" valor={bloque.etiqueta} onChange={(v) => set({ etiqueta: v })} />
+          <Texto etiqueta="Sufijo (opcional)" valor={bloque.sufijo ?? ""} placeholder="Ítems 1 – 17"
+            onChange={(v) => set({ sufijo: v })} />
+
+          <p className="campo" style={{ margin: 0 }}><label>Títulos de columna</label></p>
+          <div className="fila-campos" style={{ gridTemplateColumns: "0.6fr 1.4fr 1fr 0.6fr" }}>
+            <input value={bloque.columnas.item} placeholder="Ítem"
+              onChange={(e) => set({ columnas: { ...bloque.columnas, item: e.target.value } })} />
+            <input value={bloque.columnas.componente} placeholder="Componente"
+              onChange={(e) => set({ columnas: { ...bloque.columnas, componente: e.target.value } })} />
+            <input value={bloque.columnas.material} placeholder="Material"
+              onChange={(e) => set({ columnas: { ...bloque.columnas, material: e.target.value } })} />
+            <input value={bloque.columnas.cantidad} placeholder="Cant."
+              onChange={(e) => set({ columnas: { ...bloque.columnas, cantidad: e.target.value } })} />
+          </div>
+
+          <p className="campo" style={{ margin: 0 }}><label>Componentes</label></p>
+          <div className="sub-lista">
+            {bloque.items.map((item, i) => (
+              <div className="fila-lista" key={i}>
+                <div className="fila-campos" style={{ gridTemplateColumns: "0.6fr 1.4fr 1fr 0.6fr" }}>
+                  {(["n", "componente", "material", "cantidad"] as const).map((campo) => (
+                    <input
+                      key={campo} value={item[campo]} placeholder={campo === "n" ? "1" : campo}
+                      onChange={(e) => set({
+                        items: bloque.items.map((x, j) => (j === i ? { ...x, [campo]: e.target.value } : x)),
+                      })}
+                    />
+                  ))}
+                </div>
+                <BotonQuitar titulo="Quitar componente"
+                  onClick={() => set({ items: bloque.items.filter((_, j) => j !== i) })} />
+              </div>
+            ))}
+          </div>
+          <BotonAgregar onClick={() => set({
+            items: [...bloque.items, { n: String(bloque.items.length + 1), componente: "", material: "", cantidad: "" }],
+          })}>Agregar componente</BotonAgregar>
+        </>
+      );
+
+    case "tabla-ancha":
+      return (
+        <>
+          <Texto etiqueta="Etiqueta de la sección" valor={bloque.etiqueta} onChange={(v) => set({ etiqueta: v })} />
+          <Texto etiqueta="Sufijo (opcional)" valor={bloque.sufijo ?? ""} placeholder="Cotas en mm"
+            onChange={(v) => set({ sufijo: v })} />
+
+          <p className="campo" style={{ margin: 0 }}><label>Columnas</label></p>
+          <div className="sub-lista">
+            {bloque.columnas.map((col, i) => (
+              <div className="fila-lista" key={i}>
+                <div className="fila-campos" style={{ gridTemplateColumns: "1fr 110px" }}>
+                  <input
+                    value={col.titulo} placeholder={`Columna ${i + 1}`}
+                    onChange={(e) => set({
+                      columnas: bloque.columnas.map((c, j) => (j === i ? { ...c, titulo: e.target.value } : c)),
+                    })}
+                  />
+                  <select
+                    aria-label={`Alineación de la columna ${i + 1}`}
+                    value={col.alineacion ?? "izquierda"}
+                    onChange={(e) => set({
+                      columnas: bloque.columnas.map((c, j) =>
+                        j === i ? { ...c, alineacion: e.target.value as "izquierda" | "derecha" } : c),
+                    })}
+                  >
+                    <option value="izquierda">Izquierda</option>
+                    <option value="derecha">Derecha</option>
+                  </select>
+                </div>
+                <BotonQuitar titulo="Quitar columna" onClick={() => set({
+                  columnas: bloque.columnas.filter((_, j) => j !== i),
+                  filas: bloque.filas.map((f) => f.filter((_, j) => j !== i)),
+                })} />
+              </div>
+            ))}
+          </div>
+          <BotonAgregar onClick={() => set({
+            columnas: [...bloque.columnas, { titulo: "" }],
+            filas: bloque.filas.map((f) => [...f, ""]),
+          })}>Agregar columna</BotonAgregar>
+
+          <p className="campo" style={{ margin: 0 }}><label>Filas</label></p>
+          <div className="sub-lista">
+            {bloque.filas.map((fila, i) => (
+              <div className="fila-lista" key={i}>
+                <div className="fila-campos" style={{ gridTemplateColumns: `repeat(${bloque.columnas.length}, 1fr)` }}>
+                  {fila.map((celda, j) => (
+                    <input
+                      key={j} value={celda} placeholder={bloque.columnas[j]?.titulo || `Col ${j + 1}`}
+                      onChange={(e) => set({
+                        filas: bloque.filas.map((f, fi) =>
+                          fi === i ? f.map((c, ci) => (ci === j ? e.target.value : c)) : f),
+                      })}
+                    />
+                  ))}
+                </div>
+                <BotonQuitar titulo="Quitar fila"
+                  onClick={() => set({ filas: bloque.filas.filter((_, j) => j !== i) })} />
+              </div>
+            ))}
+          </div>
+          <BotonAgregar onClick={() => set({ filas: [...bloque.filas, bloque.columnas.map(() => "")] })}>
+            Agregar fila
+          </BotonAgregar>
+
+          {/* La nota no es opcional: define qué significa cada símbolo de las
+              columnas, y sin ella la tabla no se puede leer. */}
+          <Texto etiqueta="Nota que define los símbolos" multilinea valor={bloque.nota}
+            placeholder="Ød paso de esfera · ØD diámetro de alojamiento…"
+            onChange={(v) => set({ nota: v })} />
+        </>
+      );
+
+    case "codigos":
+      return (
+        <>
+          <Texto etiqueta="Etiqueta de la sección" valor={bloque.etiqueta} onChange={(v) => set({ etiqueta: v })} />
+          <Texto etiqueta="Sufijo (opcional)" valor={bloque.sufijo ?? ""} placeholder="1 kit por válvula"
+            onChange={(v) => set({ sufijo: v })} />
+          <div className="sub-lista">
+            {bloque.pares.map((par, i) => (
+              <div className="fila-lista" key={i}>
+                <div className="fila-campos" style={{ gridTemplateColumns: "1fr 1fr" }}>
+                  <input
+                    value={par.codigo} placeholder="350834"
+                    onChange={(e) => set({ pares: bloque.pares.map((p, j) => (j === i ? { ...p, codigo: e.target.value } : p)) })}
+                  />
+                  <input
+                    value={par.medida} placeholder='1/2"'
+                    onChange={(e) => set({ pares: bloque.pares.map((p, j) => (j === i ? { ...p, medida: e.target.value } : p)) })}
+                  />
+                </div>
+                <BotonQuitar titulo="Quitar código"
+                  onClick={() => set({ pares: bloque.pares.filter((_, j) => j !== i) })} />
+              </div>
+            ))}
+          </div>
+          <BotonAgregar onClick={() => set({ pares: [...bloque.pares, { codigo: "", medida: "" }] })}>
+            Agregar código
+          </BotonAgregar>
+          <Texto etiqueta="Nota (opcional)" multilinea valor={bloque.nota ?? ""} onChange={(v) => set({ nota: v })} />
+          <Texto etiqueta="Descripción de la imagen" valor={bloque.alt ?? ""} onChange={(v) => set({ alt: v })} />
         </>
       );
 

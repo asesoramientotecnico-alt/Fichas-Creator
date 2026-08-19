@@ -11,6 +11,10 @@ import type {
   BloqueTablaDim,
   BloqueBarraDestacada,
   BloqueChart,
+  BloqueImagen,
+  BloqueListaComponentes,
+  BloqueTablaAncha,
+  BloqueCodigos,
 } from "@/lib/tipos";
 import { generarChartSvg, seriesATabla } from "@/lib/chart";
 
@@ -20,6 +24,11 @@ import { generarChartSvg, seriesATabla } from "@/lib/chart";
  * tipo trae su estética fija.
  */
 
+/** Filas de la grilla que ocupa el bloque, si ocupa más de una. */
+function filasDe(bloque: { filasGrilla?: number }): string | undefined {
+  return bloque.filasGrilla && bloque.filasGrilla > 1 ? String(bloque.filasGrilla) : undefined;
+}
+
 function Etiqueta({ children, tono }: { children: string; tono?: "gris" }) {
   return (
     <p className="bloque-etiqueta" data-tono={tono}>
@@ -28,15 +37,25 @@ function Etiqueta({ children, tono }: { children: string; tono?: "gris" }) {
   );
 }
 
+/**
+ * Rótulo de sección con su regla de 2px y el sufijo opcional a la derecha.
+ * Es el encabezado de la V26 y lo comparten todos los bloques con rótulo.
+ */
+function Encabezado({ etiqueta, sufijo }: { etiqueta: string; sufijo?: string }) {
+  return (
+    <div className="bloque-encabezado">
+      <p className="bloque-etiqueta">{etiqueta}</p>
+      {sufijo ? <span className="sufijo">{sufijo}</span> : null}
+    </div>
+  );
+}
+
 export function Header({ bloque, fotoSrc }: { bloque: BloqueHeader; fotoSrc?: string }) {
   return (
-    <section className="bloque bloque-header" data-ancho="completo">
-      <div className="titulos">
-        <div className="acento" aria-hidden="true" />
-        <div>
-          <h1>{bloque.tituloEs}</h1>
-          {bloque.subtituloEn ? <p className="nombre-en">{bloque.subtituloEn}</p> : null}
-        </div>
+    <section className="bloque bloque-header" data-ancho={bloque.ancho ?? "completo"}>
+      <div>
+        <h1>{bloque.tituloEs}</h1>
+        {bloque.subtituloEn ? <p className="nombre-en">{bloque.subtituloEn}</p> : null}
       </div>
       {fotoSrc ? (
         <div className="foto">
@@ -52,8 +71,12 @@ export function Header({ bloque, fotoSrc }: { bloque: BloqueHeader; fotoSrc?: st
 
 export function TablaKv({ bloque }: { bloque: BloqueTablaKv }) {
   return (
-    <section className="bloque bloque-tabla-kv" data-ancho={bloque.ancho ?? "medio"}>
-      <Etiqueta>{bloque.etiqueta}</Etiqueta>
+    <section
+      className="bloque bloque-tabla-kv"
+      data-ancho={bloque.ancho ?? "medio"}
+      data-orientacion={bloque.orientacion ?? "horizontal"}
+    >
+      <Encabezado etiqueta={bloque.etiqueta} sufijo={bloque.sufijo} />
       {bloque.filas.map((fila, i) => (
         <div className="fila" key={i}>
           <span className="label">{fila.label}</span>
@@ -80,7 +103,7 @@ export function ParTexto({ bloque }: { bloque: BloqueParTexto }) {
 export function Tabla({ bloque }: { bloque: BloqueTabla }) {
   return (
     <section className="bloque bloque-tabla" data-ancho={bloque.ancho ?? "completo"}>
-      <Etiqueta>{bloque.etiqueta}</Etiqueta>
+      <Encabezado etiqueta={bloque.etiqueta} sufijo={bloque.sufijo} />
       <table className="tabla-datos">
         <thead>
           <tr>
@@ -119,7 +142,7 @@ export function InlineKv({ bloque }: { bloque: BloqueInlineKv }) {
 export function TextoRico({ bloque }: { bloque: BloqueTextoRico }) {
   return (
     <section className="bloque bloque-texto-rico" data-ancho={bloque.ancho ?? "medio"}>
-      <Etiqueta>{bloque.etiqueta}</Etiqueta>
+      <Encabezado etiqueta={bloque.etiqueta} />
       {bloque.parrafos.map((p, i) => (
         <p key={i}>{p}</p>
       ))}
@@ -130,7 +153,7 @@ export function TextoRico({ bloque }: { bloque: BloqueTextoRico }) {
 export function Chips({ bloque }: { bloque: BloqueChips }) {
   return (
     <section className="bloque bloque-chips" data-ancho={bloque.ancho ?? "medio"}>
-      <Etiqueta>{bloque.etiqueta}</Etiqueta>
+      <Encabezado etiqueta={bloque.etiqueta} />
       <div className="items">
         {bloque.items.map((item, i) => (
           <span className="chip" key={i}>
@@ -211,6 +234,150 @@ export function BarraDestacada({ bloque }: { bloque: BloqueBarraDestacada }) {
   );
 }
 
+export function Imagen({ bloque, src }: { bloque: BloqueImagen; src?: string }) {
+  return (
+    <section
+      className="bloque bloque-imagen"
+      data-ancho={bloque.ancho ?? "medio"}
+      data-filas={filasDe(bloque)}
+      data-marco={bloque.marco ? "true" : undefined}
+    >
+      {bloque.etiqueta ? (
+        <Encabezado etiqueta={bloque.etiqueta} sufijo={bloque.sufijo} />
+      ) : null}
+      <div className="cuadro">
+        {src ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={src} alt={bloque.alt} />
+        ) : (
+          <div aria-hidden="true" />
+        )}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * La lista se reparte en dos columnas del mismo alto: con diecisiete ítems
+ * en una sola columna la tabla ocuparía media hoja y dejaría el resto vacío.
+ * El corte es por mitades para que la numeración siga leyéndose de arriba a
+ * abajo en cada columna.
+ */
+export function ListaComponentes({ bloque }: { bloque: BloqueListaComponentes }) {
+  const corte = Math.ceil(bloque.items.length / 2);
+  const mitades = [bloque.items.slice(0, corte), bloque.items.slice(corte)].filter(
+    (m) => m.length > 0,
+  );
+
+  return (
+    <section className="bloque bloque-lista-componentes" data-ancho={bloque.ancho ?? "completo"}>
+      <Encabezado etiqueta={bloque.etiqueta} sufijo={bloque.sufijo} />
+      <div className="columnas">
+        {mitades.map((mitad, i) => (
+          <table className="tabla-banda" key={i}>
+            <colgroup>
+              <col className="c-item" />
+              <col className="c-componente" />
+              <col className="c-material" />
+              <col className="c-cantidad" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>{bloque.columnas.item}</th>
+                <th>{bloque.columnas.componente}</th>
+                <th>{bloque.columnas.material}</th>
+                <th data-alineacion="derecha">{bloque.columnas.cantidad}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mitad.map((item, j) => (
+                <tr key={j}>
+                  <td className="item">{item.n}</td>
+                  <td className="componente">{item.componente}</td>
+                  <td>{item.material}</td>
+                  <td data-alineacion="derecha">{item.cantidad}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function TablaAncha({ bloque }: { bloque: BloqueTablaAncha }) {
+  return (
+    <section className="bloque bloque-tabla-ancha" data-ancho={bloque.ancho ?? "completo"}>
+      <Encabezado etiqueta={bloque.etiqueta} sufijo={bloque.sufijo} />
+      <table className="tabla-banda">
+        <thead>
+          <tr>
+            {bloque.columnas.map((col, i) => (
+              <th key={i} data-alineacion={col.alineacion ?? "izquierda"}>
+                {col.titulo}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {bloque.filas.map((fila, i) => (
+            <tr key={i}>
+              {fila.map((celda, j) => (
+                <td key={j} data-alineacion={bloque.columnas[j]?.alineacion ?? "izquierda"}>
+                  {celda}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {/* La nota define los símbolos de las columnas: sin ella la tabla no se
+          puede leer, así que el tipo la exige (ver tipos.ts). */}
+      <p className="nota-simbolos">{bloque.nota}</p>
+    </section>
+  );
+}
+
+export function Codigos({ bloque, src }: { bloque: BloqueCodigos; src?: string }) {
+  // Por mitades, no por filas: los códigos van ordenados por medida y hay que
+  // poder recorrerlos de arriba a abajo en cada columna. La colocación
+  // automática de la grilla los intercalaría.
+  const corte = Math.ceil(bloque.pares.length / 2);
+  const mitades = [bloque.pares.slice(0, corte), bloque.pares.slice(corte)].filter(
+    (m) => m.length > 0,
+  );
+
+  return (
+    <section className="bloque bloque-codigos" data-ancho={bloque.ancho ?? "completo"}>
+      <Encabezado etiqueta={bloque.etiqueta} sufijo={bloque.sufijo} />
+      <div className="cuerpo">
+        <div>
+          <div className="pares">
+            {mitades.map((mitad, i) => (
+              <div className="columna" key={i}>
+                {mitad.map((par, j) => (
+                  <div className="par" key={j}>
+                    <span className="codigo">{par.codigo}</span>
+                    <span className="medida">{par.medida}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+          {bloque.nota ? <p className="nota">{bloque.nota}</p> : null}
+        </div>
+        {src ? (
+          <div className="figura">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={src} alt={bloque.alt ?? ""} />
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 /**
  * El SVG se genera en el servidor y se inyecta como markup: es determinístico
  * y no lleva scripts (§7). Los datos van además como tabla, para que la
@@ -226,7 +393,7 @@ export function Chart({ bloque }: { bloque: BloqueChart }) {
 
   return (
     <section className="bloque bloque-chart" data-ancho={bloque.ancho ?? "completo"}>
-      <Etiqueta>{bloque.etiqueta}</Etiqueta>
+      <Encabezado etiqueta={bloque.etiqueta} />
       <div className="grafico" dangerouslySetInnerHTML={{ __html: svg }} />
       {tabla.filas.length > 0 ? (
         <table className="tabla-datos tabla-grafico">
@@ -286,6 +453,14 @@ export function RenderBloque({
       return <BarraDestacada bloque={bloque} />;
     case "chart":
       return <Chart bloque={bloque} />;
+    case "imagen":
+      return <Imagen bloque={bloque} src={bloque.assetId ? assets?.[bloque.assetId] : undefined} />;
+    case "lista-componentes":
+      return <ListaComponentes bloque={bloque} />;
+    case "tabla-ancha":
+      return <TablaAncha bloque={bloque} />;
+    case "codigos":
+      return <Codigos bloque={bloque} src={bloque.assetId ? assets?.[bloque.assetId] : undefined} />;
     default: {
       // Si se agrega un tipo a §4 sin componente, esto no compila.
       const _exhaustivo: never = bloque;

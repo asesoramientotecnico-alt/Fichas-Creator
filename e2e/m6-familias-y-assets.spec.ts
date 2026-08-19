@@ -135,7 +135,8 @@ test("una ficha desde plantilla nace con los bloques, con ids nuevos y sin datos
 });
 
 test("el bloque chart sale en el PDF con su tabla de datos", async ({ request }) => {
-  const r = await request.get("/api/vista-previa/pdf?chart=1");
+  // Sobre la ficha de la tuerca: el gráfico de demostración es de bulonería.
+  const r = await request.get("/api/vista-previa/pdf?ficha=tuerca&chart=1");
   expect(r.status()).toBe(200);
   const bytes = await r.body();
 
@@ -152,15 +153,19 @@ test("el bloque chart sale en el PDF con su tabla de datos", async ({ request })
   const archivo = join(dir, "f.pdf");
   writeFileSync(archivo, bytes);
 
+  // El rótulo de sección va con tracking amplio, y al extraer el texto se
+  // cuela un espacio entre letra y letra. Se comparan sin espacios.
   const py = `
-import pymupdf, json
+import pymupdf, json, re
 doc = pymupdf.open(${JSON.stringify(archivo)})
 t = "".join(p.get_text() for p in doc)
+plano = re.sub(r"\\s+", "", t)
+def hay(s): return re.sub(r"\\s+", "", s) in plano
 print(json.dumps({
-  "etiqueta": "PAR DE APRIETE ORIENTATIVO" in t,
-  "leyenda": "A2-70 (304)" in t and "A4-80 (316)" in t,
-  "ejes": "DIÁMETRO NOMINAL (MM)" in t and "PAR (N·M)" in t,
-  "tabla": "224" in t and "168" in t,
+  "etiqueta": hay("PAR DE APRIETE ORIENTATIVO"),
+  "leyenda": hay("A2-70 (304)") and hay("A4-80 (316)"),
+  "ejes": hay("DIÁMETRO NOMINAL (MM)") and hay("PAR (N·M)"),
+  "tabla": hay("224") and hay("168"),
 }))
 `;
   const info = JSON.parse(execFileSync("python3", ["-c", py], { encoding: "utf8" }));

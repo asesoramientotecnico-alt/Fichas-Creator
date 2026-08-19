@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { crearClienteServidor } from "@/lib/supabase/cliente-servidor";
 import { comoBloques, type FichaEstado } from "@/lib/tipos";
 import { generarPdf } from "@/lib/pdf/generar";
+import { NOTA_AL_PIE } from "@/components/ficha/FichaVista";
 
 // Chromium necesita el runtime de Node, no el edge.
 export const runtime = "nodejs";
@@ -32,7 +33,7 @@ export async function GET(
 
   const { data: ficha } = await supabase
     .from("ficha")
-    .select("id, estado, version, anio, producto(sku, nombre_es)")
+    .select("id, estado, version, anio, producto(sku, nombre_es, categoria)")
     .eq("id", id)
     .maybeSingle()
     .overrideTypes<{
@@ -40,7 +41,7 @@ export async function GET(
       estado: FichaEstado;
       version: string;
       anio: number;
-      producto: { sku: string; nombre_es: string } | null;
+      producto: { sku: string; nombre_es: string; categoria: string | null } | null;
     }>();
 
   if (!ficha) {
@@ -71,11 +72,13 @@ export async function GET(
     // ocupa las hojas que haga falta, sin recortar.
     const { pdf, hojas } = await generarPdf(
       {
-        catalogo: ficha.producto?.nombre_es ?? "",
+        familia: ficha.producto?.categoria ?? "",
+        pildoraSrc: undefined,
         version: ficha.version,
+        revision: revision?.n ?? 1,
         anio: ficha.anio,
         estado: ficha.estado,
-        nota: "Datos orientativos. Confirmar disponibilidad con equipo técnico · famiq.com.ar",
+        nota: NOTA_AL_PIE,
         bloques,
         tituloInterior: "Tabla de cotas y dimensiones",
         antetitulo: ficha.producto?.nombre_es ?? "",

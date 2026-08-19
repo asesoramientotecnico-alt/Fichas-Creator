@@ -1,21 +1,31 @@
 /* ============================================================
    Ficha técnica — estética invariante (§1 requisito 1, §3)
    ============================================================
-   Valores portados de las dos fichas de producción de referencia
-   (tuerca autofrenante y arandela chapista), no del prototipo .dc.html:
-   las dos fichas reales coinciden entre sí y el prototipo se aparta de
-   ellas y de la clase .t-eyebrow del propio design system.
+   Valores medidos sobre referencia/Plantilla ficha tecnica FAMIQ V26.pdf,
+   que reemplaza a las dos fichas de producción anteriores como fuente de
+   verdad visual. El detalle del cambio y su motivo están en
+   docs/rediseno-plantilla-v26.md.
 
    Geometría en mm, tipografía en pt: es un documento impreso.
    Ningún valor de acá se parametriza desde la UI.
+
+   Tipografía, verificada glifo por glifo contra el PDF:
+     - Roboto Condensed 700 → títulos y rótulos de sección
+     - Roboto Condensed 400 → rótulos chicos, sufijos, códigos
+     - Roboto 400          → cuerpo y valores
+   El tracking de cada estilo también sale de medir el paso entre caracteres
+   del PDF; no es a ojo.
    ============================================================ */
 
 .hoja {
   --hoja-ancho: 210mm;
   --hoja-alto: 297mm;
-  --hoja-padding-x: 13.5mm;
-  --hoja-padding-top: 14mm;
-  --hoja-padding-bottom: 8mm;
+  --hoja-padding-x: 13mm;
+  --hoja-padding-top: 20.8mm;
+  --hoja-padding-bottom: 8.7mm;
+  /* Separación entre columnas y entre filas de la grilla de bloques. */
+  --grilla-columna: 9mm;
+  --grilla-fila: 4.3mm;
 
   box-sizing: border-box;
   width: var(--hoja-ancho);
@@ -28,13 +38,19 @@
   flex-direction: column;
 }
 
+/* La primera hoja abre con más aire: el logo grande necesita respiro. */
+.hoja[data-primera="true"] {
+  --hoja-padding-top: 26.2mm;
+}
+
 /* En pantalla las hojas se ven como tarjetas apiladas. */
 .hoja + .hoja {
   margin-top: 8mm;
 }
 
 /* ------------------------------------------------------------
-   Cabecera y pie
+   Cabecera de la primera hoja: logo grande a la izquierda,
+   píldora de unidad de negocio y familia a la derecha.
    ------------------------------------------------------------ */
 
 .ficha-cabecera {
@@ -42,51 +58,158 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 10mm;
-  padding-bottom: 2.6mm;
 }
 
 .ficha-cabecera .logo {
-  width: 12.5mm;
+  /* Ancho medido de la tinta del logo en el PDF, no de su caja. */
+  width: 42.2mm;
+  height: auto;
+  display: block;
+  margin-top: 2mm;
+}
+
+.ficha-cabecera .marca-negocio {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.ficha-cabecera .pildora {
+  width: 74.9mm;
   height: auto;
   display: block;
 }
 
-.ficha-cabecera .identificacion {
-  text-align: right;
+.ficha-cabecera .familia {
   font-family: var(--font-condensed);
-  text-transform: uppercase;
-}
-
-.ficha-cabecera .identificacion .catalogo {
-  font-size: 8.5pt;
-  letter-spacing: 0.18em;
-  color: var(--famiq-grey-400);
-  display: block;
-}
-
-.ficha-cabecera .identificacion .version {
   font-weight: 700;
-  font-size: 8.5pt;
-  letter-spacing: 0.18em;
-  color: var(--famiq-red);
-  display: block;
-  margin-top: 1mm;
+  font-size: 10.5pt;
+  line-height: 1.2;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--famiq-grey-400);
+  margin: 1.5mm 0 0;
+  text-align: right;
 }
 
-/* Regla de marca bajo la cabecera. */
-.regla-marca {
-  height: 2px;
-  background: var(--famiq-graphite);
+/* ------------------------------------------------------------
+   Rótulo "FICHA TÉCNICA" + identificación, con la regla de marca
+   ------------------------------------------------------------ */
+
+.ficha-rotulo {
+  display: flex;
+  align-items: baseline;
+  gap: 4.8mm;
+  margin-top: 15mm;
+  padding-bottom: 1.5mm;
+  /* Tramo gris de la regla: el rojo lo pone el rótulo con su propio borde. */
+  border-bottom: 1px solid var(--famiq-grey-200);
 }
+
+.ficha-rotulo .rotulo {
+  font-family: var(--font-condensed);
+  font-weight: 700;
+  font-size: 10pt;
+  line-height: 1.2;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--famiq-red);
+  margin: 0;
+  /* El tramo rojo de la regla, que arranca en el borde de la hoja y termina
+     un poco después del rótulo. */
+  padding-right: 3mm;
+  padding-bottom: 1.5mm;
+  margin-bottom: -1.5mm;
+  border-bottom: 1px solid var(--famiq-red);
+}
+
+.ficha-rotulo .identificacion {
+  font-family: var(--font-condensed);
+  font-size: 8.5pt;
+  line-height: 1.2;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--famiq-grey-400);
+  margin: 0;
+}
+
+/* ------------------------------------------------------------
+   Cabecera de las hojas interiores: título de hoja + producto en
+   rojo, logo completo a la derecha, regla de marca invertida.
+   ------------------------------------------------------------ */
+
+.ficha-cabecera[data-interior="true"] {
+  align-items: baseline;
+}
+
+.ficha-cabecera .titulo-hoja {
+  display: flex;
+  align-items: baseline;
+  gap: 4mm;
+  flex-wrap: wrap;
+}
+
+.ficha-cabecera .titulo-hoja h2 {
+  font-family: var(--font-condensed);
+  font-weight: 700;
+  font-size: 15pt;
+  line-height: 1.15;
+  letter-spacing: 0;
+  margin: 0;
+  color: var(--famiq-graphite);
+}
+
+.ficha-cabecera .titulo-hoja .producto {
+  font-family: var(--font-condensed);
+  font-weight: 700;
+  font-size: 9pt;
+  line-height: 1.2;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--famiq-red);
+}
+
+.ficha-cabecera .logo-interior {
+  /* Ancho de la tinta del logo en las hojas interiores de la plantilla. */
+  width: 23mm;
+  height: auto;
+  display: block;
+  flex: none;
+}
+
+/* Regla de marca de las hojas interiores: gris a la izquierda y rojo a la
+   derecha, al ancho del logo. Es el espejo de la de la primera hoja. */
+.regla-marca {
+  display: flex;
+  height: 3px;
+  margin-top: 10.7mm;
+}
+
+.regla-marca .tramo-gris {
+  flex: 1;
+  background: var(--famiq-grey-200);
+}
+
+.regla-marca .tramo-rojo {
+  width: 26.2mm;
+  flex: none;
+  background: var(--famiq-red);
+}
+
+/* ------------------------------------------------------------
+   Pie
+   ------------------------------------------------------------ */
 
 .ficha-pie {
   margin-top: auto;
-  padding-top: 2.5mm;
+  padding-top: 4.3mm;
   border-top: 1px solid var(--famiq-grey-200);
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  gap: 6mm;
   font-size: 7.5pt;
+  line-height: 1.3;
   color: var(--famiq-grey-400);
 }
 
@@ -94,27 +217,52 @@
   font-family: var(--font-condensed);
   font-size: 8pt;
   letter-spacing: 0.1em;
+  white-space: nowrap;
 }
 
 /* ------------------------------------------------------------
-   Encabezado de bloque — rojo, condensed bold, tracking amplio.
-   Es .t-eyebrow del design system.
+   Rótulo de sección — grafito, condensed bold, tracking amplio,
+   con la regla de 2px arriba. Es la marca visual de la V26: antes
+   iba en rojo y sin regla.
    ------------------------------------------------------------ */
 
 .bloque-etiqueta {
   font-family: var(--font-condensed);
   font-weight: 700;
   font-size: 9pt;
+  line-height: 1.2;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--famiq-red);
-  margin: 0 0 2mm;
+  letter-spacing: 0.2em;
+  color: var(--famiq-graphite);
+  margin: 0 0 2.2mm;
 }
 
-/* Variante gris para rótulos secundarios (unidad, encabezado de par). */
-.bloque-etiqueta[data-tono="gris"] {
+/* Sufijo a la derecha del rótulo: unidad, rango, aclaración de alcance. */
+.bloque-encabezado {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4mm;
+  border-top: 2px solid var(--famiq-graphite);
+  padding-top: 1.7mm;
+}
+
+.bloque-encabezado .bloque-etiqueta {
+  margin-bottom: 0;
+}
+
+.bloque-encabezado .sufijo {
+  font-family: var(--font-condensed);
+  font-size: 8pt;
+  line-height: 1.2;
+  letter-spacing: 0.1em;
   color: var(--famiq-grey-400);
-  font-weight: 400;
+  white-space: nowrap;
+}
+
+/* Variante gris para rótulos secundarios (encabezado de par de textos). */
+.bloque-etiqueta[data-tono="gris"] {
+  color: var(--famiq-grey-500);
   letter-spacing: 0.12em;
   font-size: 8pt;
 }
@@ -123,52 +271,73 @@
   break-inside: avoid;
 }
 
-.bloque[data-ancho="completo"] {
-  grid-column: 1 / -1;
-}
+/* ------------------------------------------------------------
+   Grilla de la hoja: 12 pistas. Los cuatro anchos de §4 son
+   fracciones de esas 12, así que las columnas de bloques vecinos
+   quedan alineadas sea cual sea la combinación.
+   ------------------------------------------------------------ */
 
-/* Grilla de bloques de la hoja. */
 .grilla-bloques {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: 9mm;
-  row-gap: 5.5mm;
+  grid-template-columns: repeat(12, 1fr);
+  column-gap: var(--grilla-columna);
+  row-gap: var(--grilla-fila);
+  /* Aire entre la regla de marca y el primer bloque de las hojas
+     interiores. En la primera hoja el bloque de cabecera arranca pegado a la
+     regla del rótulo, como en la plantilla. */
   padding-top: 6mm;
   align-content: start;
   flex: 1;
 }
 
+.hoja[data-primera="true"] .grilla-bloques {
+  padding-top: 0;
+}
+
+.bloque[data-ancho="completo"] {
+  grid-column: span 12;
+}
+
+.bloque[data-ancho="dos-tercios"] {
+  grid-column: span 8;
+}
+
+.bloque[data-ancho="medio"] {
+  grid-column: span 6;
+}
+
+.bloque[data-ancho="un-tercio"] {
+  grid-column: span 4;
+}
+
+/* Un bloque alto puede ocupar dos filas de la grilla, para que los dos
+   bloques angostos que lo siguen se apilen a su costado. No se estira al
+   alto de las dos filas: queda arriba, como en la plantilla. */
+.bloque[data-filas="2"] {
+  grid-row: span 2;
+  align-self: start;
+}
+
 /* ------------------------------------------------------------
-   header
+   header — título grande a la izquierda, foto sin marco a la derecha
    ------------------------------------------------------------ */
 
 .bloque-header {
   display: grid;
-  grid-template-columns: 1fr 31mm;
-  gap: 8mm;
+  /* El ancho de la columna de título define dónde corta el titular; medido
+     del PDF, donde "Válvula esférica 3" corta antes de "cuerpos". */
+  grid-template-columns: 102mm 1fr;
+  gap: 9mm;
   align-items: center;
-  padding-top: 1.2mm;
-}
-
-.bloque-header .titulos {
-  display: flex;
-  gap: 4mm;
-}
-
-/* Barra roja vertical a la izquierda del título. */
-.bloque-header .acento {
-  width: 2.5mm;
-  background: var(--famiq-red);
-  flex: none;
-  align-self: stretch;
+  padding-top: 1mm;
 }
 
 .bloque-header h1 {
   font-family: var(--font-condensed);
   font-weight: 700;
-  font-size: 19pt;
-  line-height: 1.1;
-  letter-spacing: -0.015em;
+  font-size: 28pt;
+  line-height: 1.01;
+  letter-spacing: 0;
   margin: 0;
   color: var(--famiq-graphite);
   text-wrap: balance;
@@ -179,18 +348,17 @@
   font-style: italic;
   font-size: 10.5pt;
   color: var(--famiq-grey-400);
-  margin: 1.5mm 0 0;
+  margin: 2mm 0 0;
 }
 
+/* Sin marco ni fondo: la V26 apoya la foto directo sobre el blanco. */
 .bloque-header .foto {
-  border: 1px solid var(--famiq-grey-200);
-  background: var(--famiq-grey-50);
-  /* Medido del original: 31 x 28 mm, no cuadrada. */
-  aspect-ratio: 31 / 28;
+  justify-self: end;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 3mm;
+  justify-content: flex-end;
+  width: 100%;
+  height: 34.3mm;
 }
 
 .bloque-header .foto img {
@@ -201,20 +369,19 @@
 }
 
 /* ------------------------------------------------------------
-   tabla-kv
+   tabla-kv — dos disposiciones, los mismos campos
    ------------------------------------------------------------ */
 
 .bloque-tabla-kv .fila {
-  display: grid;
-  grid-template-columns: 46mm 1fr;
-  gap: 3mm;
-  padding: 1.8mm 0;
+  padding: 1.6mm 0;
   border-bottom: 1px solid var(--famiq-grey-200);
-  align-items: baseline;
 }
 
-.bloque-tabla-kv .fila:first-of-type {
-  border-top: 1px solid var(--famiq-grey-200);
+.bloque-tabla-kv[data-orientacion="horizontal"] .fila {
+  display: grid;
+  grid-template-columns: 29mm 1fr;
+  gap: 2mm;
+  align-items: baseline;
 }
 
 .bloque-tabla-kv .label {
@@ -222,18 +389,32 @@
   font-size: 8pt;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--famiq-grey-400);
+  color: var(--famiq-grey-500);
   line-height: 1.3;
 }
 
 .bloque-tabla-kv .value {
-  font-size: 10pt;
+  font-size: 9pt;
   line-height: 1.35;
 }
 
+/* Vertical: rótulo arriba, valor abajo. Lo pide una columna angosta, donde
+   el rótulo no entra al lado del valor. */
+.bloque-tabla-kv[data-orientacion="vertical"] .fila {
+  display: block;
+}
+
+.bloque-tabla-kv[data-orientacion="vertical"] .label {
+  display: block;
+  margin-bottom: 0.4mm;
+}
+
+.bloque-tabla-kv[data-orientacion="vertical"] .value {
+  display: block;
+}
+
 /* ------------------------------------------------------------
-   tabla y tabla-dim — encabezado gris sobre blanco, con regla.
-   Sin banda grafito: así son las dos fichas reales.
+   tabla y tabla-dim — encabezado gris sobre blanco, con regla
    ------------------------------------------------------------ */
 
 .tabla-datos {
@@ -249,7 +430,7 @@
   font-size: 7.5pt;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--famiq-grey-400);
+  color: var(--famiq-grey-500);
   padding: 0 2mm 1.6mm 0;
   border-bottom: 1px solid var(--famiq-graphite);
   white-space: nowrap;
@@ -258,7 +439,7 @@
 .tabla-datos tbody td {
   padding: 1.4mm 2mm 1.4mm 0;
   border-bottom: 1px solid var(--famiq-grey-200);
-  font-size: 9.5pt;
+  font-size: 9pt;
 }
 
 /* Primera columna en negrita: es la clave de la fila. */
@@ -268,6 +449,40 @@
 }
 
 .tabla-datos [data-alineacion="derecha"] {
+  text-align: right;
+}
+
+/* Variante con banda oscura de encabezado, que usan lista-componentes y
+   tabla-ancha. Las celdas de la banda son contiguas, sin separación. */
+.tabla-banda {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  table-layout: fixed;
+}
+
+.tabla-banda thead th {
+  text-align: left;
+  background: var(--famiq-graphite);
+  color: #fff;
+  font-family: var(--font-condensed);
+  font-weight: 700;
+  font-size: 7.5pt;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 1.6mm 2mm;
+  white-space: nowrap;
+}
+
+.tabla-banda tbody td {
+  padding: 1.28mm 2mm;
+  border-bottom: 1px solid var(--famiq-grey-200);
+  font-size: 9pt;
+  line-height: 1.3;
+}
+
+.tabla-banda [data-alineacion="derecha"] {
   text-align: right;
 }
 
@@ -283,8 +498,8 @@
 
 .bloque-par-texto p {
   margin: 0;
-  font-size: 10pt;
-  line-height: 1.45;
+  font-size: 9pt;
+  line-height: 1.5;
   text-wrap: pretty;
 }
 
@@ -304,12 +519,12 @@
   font-size: 8pt;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--famiq-grey-400);
+  color: var(--famiq-grey-500);
   white-space: nowrap;
 }
 
 .bloque-inline-kv .valor {
-  font-size: 10pt;
+  font-size: 9pt;
 }
 
 /* ------------------------------------------------------------
@@ -317,9 +532,9 @@
    ------------------------------------------------------------ */
 
 .bloque-texto-rico p {
-  font-size: 10pt;
+  font-size: 9pt;
   line-height: 1.5;
-  margin: 0 0 2.5mm;
+  margin: 0 0 2.45mm;
   text-wrap: pretty;
 }
 
@@ -328,22 +543,28 @@
 }
 
 /* ------------------------------------------------------------
-   chips
+   chips — borde y texto rojos sobre fondo rosado, en mayúsculas.
+   En la V26 dejaron de ser grises: son la marca de color de la hoja.
    ------------------------------------------------------------ */
 
 .bloque-chips .items {
   display: flex;
   flex-wrap: wrap;
-  gap: 2mm;
+  gap: 2.4mm;
 }
 
 .bloque-chips .chip {
-  border: 1px solid var(--famiq-grey-200);
-  background: var(--famiq-grey-50);
+  border: 1px solid var(--famiq-red);
+  background: var(--famiq-red-tenue);
   border-radius: 2px;
-  padding: 1.4mm 2.5mm;
-  font-size: 8.5pt;
-  color: var(--famiq-graphite);
+  padding: 1.9mm 3mm;
+  font-family: var(--font-condensed);
+  font-weight: 700;
+  font-size: 8pt;
+  line-height: 1.2;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--famiq-red-dark);
 }
 
 /* ------------------------------------------------------------
@@ -352,8 +573,8 @@
 
 .bloque-croquis .marco {
   border: 1px solid var(--famiq-grey-200);
-  background: var(--famiq-grey-50);
-  padding: 4mm;
+  background: #fff;
+  padding: 4.3mm 5.5mm;
   display: grid;
   grid-template-columns: 1fr 52mm;
   gap: 8mm;
@@ -362,7 +583,7 @@
 
 .bloque-croquis .marco img {
   width: 100%;
-  max-height: 58mm;
+  max-height: 70mm;
   object-fit: contain;
   display: block;
 }
@@ -378,7 +599,7 @@
   grid-template-columns: 6mm 1fr;
   gap: 2mm;
   align-items: baseline;
-  font-size: 9.5pt;
+  font-size: 9pt;
 }
 
 .bloque-croquis .simbolo {
@@ -402,7 +623,7 @@
   display: flex;
   align-items: baseline;
   gap: 3mm;
-  margin-bottom: 2mm;
+  margin-bottom: 2.2mm;
 }
 
 .bloque-tabla-dim .encabezado .bloque-etiqueta {
@@ -436,46 +657,185 @@
   font-family: var(--font-condensed);
   font-weight: 700;
   font-size: 9pt;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--famiq-graphite);
   white-space: nowrap;
 }
 
 .bloque-barra-destacada .valor {
-  font-size: 10.5pt;
+  font-size: 10pt;
 }
 
 .bloques-al-pie {
-  margin-top: 6mm;
+  margin-top: var(--grilla-fila);
 }
 
 /* ------------------------------------------------------------
-   Cabecera de hojas interiores: antetítulo + título grande, isotipo a la derecha
+   imagen — figura con rótulo, marco opcional
    ------------------------------------------------------------ */
 
-.ficha-cabecera .titulo-hoja .antetitulo {
-  display: block;
-  font-family: var(--font-condensed);
-  font-size: 8pt;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--famiq-grey-400);
+.bloque-imagen .cuadro {
+  margin-top: 2.2mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.ficha-cabecera .titulo-hoja h2 {
+.bloque-imagen[data-marco="true"] .cuadro {
+  border: 1px solid var(--famiq-grey-200);
+  background: #fff;
+  padding: 4.3mm 5.5mm;
+}
+
+/* Sin marco la imagen no llega al borde de la columna: lleva el mismo retiro
+   óptico que el padding de una con marco, así no choca con la regla de la
+   sección de al lado. Es el retiro que tiene en la plantilla. */
+.bloque-imagen:not([data-marco="true"]) .cuadro {
+  padding: 0 3.2mm;
+}
+
+.bloque-imagen .cuadro img {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* ------------------------------------------------------------
+   lista-componentes — dos tablas lado a lado, banda oscura,
+   número de ítem en rojo
+   ------------------------------------------------------------ */
+
+.bloque-lista-componentes .columnas {
+  margin-top: 2.2mm;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--grilla-columna);
+  align-items: start;
+}
+
+.bloque-lista-componentes .item {
   font-family: var(--font-condensed);
   font-weight: 700;
-  font-size: 15pt;
-  letter-spacing: 0.01em;
-  margin: 0.5mm 0 0;
-  color: var(--famiq-graphite);
+  color: var(--famiq-red);
 }
 
-.ficha-cabecera .isotipo {
-  width: 10.3mm;
-  height: auto;
+.bloque-lista-componentes .componente {
+  font-size: 8.5pt;
+}
+
+.bloque-lista-componentes col.c-item {
+  width: 13.6%;
+}
+
+.bloque-lista-componentes col.c-componente {
+  width: 45.7%;
+}
+
+.bloque-lista-componentes col.c-material {
+  width: 25.7%;
+}
+
+.bloque-lista-componentes col.c-cantidad {
+  width: 15%;
+}
+
+/* ------------------------------------------------------------
+   tabla-ancha — tabla de cotas a ancho completo con nota al pie
+   ------------------------------------------------------------ */
+
+.bloque-tabla-ancha .tabla-banda {
+  margin-top: 2.2mm;
+}
+
+.bloque-tabla-ancha .tabla-banda tbody td {
+  padding: 1.28mm 1.6mm;
+}
+
+.bloque-tabla-ancha .tabla-banda thead th {
+  padding: 1.6mm 1.6mm;
+}
+
+/* La primera columna es el código, no una clave jerárquica: sin negrita. */
+.bloque-tabla-ancha .tabla-banda tbody td:first-child {
+  font-weight: 400;
+  color: var(--famiq-grey-500);
+}
+
+.bloque-tabla-ancha .tabla-banda tbody td:nth-child(2) {
+  font-weight: 700;
+}
+
+.nota-simbolos {
+  margin: 2.4mm 0 0;
+  font-size: 7.5pt;
+  line-height: 1.5;
+  color: var(--famiq-grey-500);
+  text-wrap: pretty;
+}
+
+/* ------------------------------------------------------------
+   codigos — pares código → medida en dos columnas, con imagen
+   ------------------------------------------------------------ */
+
+.bloque-codigos .cuerpo {
+  margin-top: 2.2mm;
+  display: grid;
+  grid-template-columns: 1fr 44.2mm;
+  gap: var(--grilla-columna);
+  align-items: start;
+}
+
+.bloque-codigos .pares {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 var(--grilla-columna);
+  align-items: start;
+}
+
+.bloque-codigos .par {
+  display: grid;
+  grid-template-columns: 21mm 1fr;
+  padding: 1.6mm 0;
+  border-bottom: 1px solid var(--famiq-grey-200);
+  align-items: baseline;
+}
+
+.bloque-codigos .codigo {
+  font-family: var(--font-condensed);
+  font-size: 9pt;
+  color: var(--famiq-grey-500);
+}
+
+.bloque-codigos .medida {
+  font-size: 9pt;
+  font-weight: 700;
+}
+
+.bloque-codigos .figura {
+  border: 1px solid var(--famiq-grey-200);
+  background: var(--famiq-grey-50);
+  padding: 3.4mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+}
+
+.bloque-codigos .figura img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
   display: block;
+}
+
+.bloque-codigos .nota {
+  grid-column: 1;
+  margin: 2.4mm 0 0;
+  font-size: 9pt;
+  line-height: 1.5;
+  text-wrap: pretty;
 }
 
 /* ------------------------------------------------------------
@@ -507,7 +867,7 @@
    ------------------------------------------------------------ */
 
 .bloque-chart .grafico {
-  margin-top: 1mm;
+  margin-top: 2.2mm;
 }
 
 .bloque-chart .grafico svg {

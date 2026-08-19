@@ -2,7 +2,8 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { Bloque } from "@/lib/tipos";
+import type { AnchoBloque, Bloque } from "@/lib/tipos";
+import { anchoDe } from "@/lib/paginado";
 import { TIPOS_DISPONIBLES, bloqueVacio } from "@/lib/bloques-nuevos";
 import { guardarRevision } from "@/app/acciones-ficha";
 import { compararRevisiones, ETIQUETA_CLASE } from "@/lib/diff";
@@ -13,15 +14,25 @@ import "./editor.css";
 
 const NOMBRE_TIPO = new Map(TIPOS_DISPONIBLES.map((t) => [t.tipo, t.nombre]));
 
+const ANCHOS: { valor: AnchoBloque; nombre: string }[] = [
+  { valor: "completo", nombre: "Ancho completo" },
+  { valor: "dos-tercios", nombre: "Dos tercios" },
+  { valor: "medio", nombre: "Media hoja" },
+  { valor: "un-tercio", nombre: "Un tercio" },
+];
+
 export default function Editor({
   fichaId,
   bloquesIniciales,
   datosFicha,
+  producto,
   assets,
 }: {
   fichaId: string;
   bloquesIniciales: Bloque[];
   datosFicha: Omit<DatosFicha, "hojas">;
+  /** Nombre del producto: va en rojo en la cabecera de las hojas interiores. */
+  producto: string;
   assets?: Record<string, string>;
 }) {
   const router = useRouter();
@@ -92,6 +103,29 @@ export default function Editor({
               </div>
             </header>
             <div className="cuerpo">
+              {/* El ancho es lo único de la maqueta que el usuario decide, y
+                  sólo entre las cuatro fracciones de la grilla de 12 pistas.
+                  Cualquier otro valor rompería la alineación de columnas. */}
+              <div className="campo">
+                <label htmlFor={`ancho-${bloque.id}`}>Ancho en la hoja</label>
+                <select
+                  id={`ancho-${bloque.id}`}
+                  value={anchoDe(bloque)}
+                  onChange={(e) =>
+                    setBloques(
+                      bloques.map((b, j) =>
+                        j === i ? { ...b, ancho: e.target.value as AnchoBloque } : b,
+                      ),
+                    )
+                  }
+                >
+                  {ANCHOS.map((a) => (
+                    <option key={a.valor} value={a.valor}>
+                      {a.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <CamposBloque
                 bloque={bloque}
                 onChange={(nuevo) => setBloques(bloques.map((b, j) => (j === i ? nuevo : b)))}
@@ -164,7 +198,7 @@ export default function Editor({
             bloques={bloques}
             assets={assets}
             tituloInterior="Tabla de cotas y dimensiones"
-            antetitulo={datosFicha.catalogo}
+            antetitulo={producto}
           />
         </div>
       ) : null}

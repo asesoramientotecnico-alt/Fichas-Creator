@@ -31,6 +31,10 @@
   --famiq-grey-300:   #BFBFBF;
   --famiq-grey-400:   #8A8A8A;
   --famiq-grey-500:   #5E5E5E;
+  /* Rojo tenue de relleno de los chips de la plantilla V26. Es el único
+     color de la ficha que no venía en la paleta de marca; se agrega acá
+     para que la ficha no declare colores propios. */
+  --famiq-red-tenue:  #FFF5F4;
 
   /* SEMANTIC TOKENS — use these in product code */
   --fg-1:             var(--famiq-graphite);

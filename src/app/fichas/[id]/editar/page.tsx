@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Cabecera from "@/components/Cabecera";
 import Editor from "@/components/editor/Editor";
+import { NOTA_AL_PIE } from "@/components/ficha/FichaVista";
 import { crearClienteServidor } from "@/lib/supabase/cliente-servidor";
 import { comoBloques, type FichaEstado } from "@/lib/tipos";
 
@@ -15,7 +16,7 @@ export default async function EditarFichaPage({
 
   const { data: ficha } = await supabase
     .from("ficha")
-    .select("id, estado, version, anio, producto(sku, nombre_es)")
+    .select("id, estado, version, anio, producto(sku, nombre_es, categoria)")
     .eq("id", id)
     .maybeSingle()
     .overrideTypes<{
@@ -23,7 +24,7 @@ export default async function EditarFichaPage({
       estado: FichaEstado;
       version: string;
       anio: number;
-      producto: { sku: string; nombre_es: string } | null;
+      producto: { sku: string; nombre_es: string; categoria: string | null } | null;
     }>();
 
   if (!ficha) notFound();
@@ -60,12 +61,14 @@ export default async function EditarFichaPage({
           fichaId={id}
           bloquesIniciales={comoBloques(revision?.bloques)}
           datosFicha={{
-            catalogo: ficha.producto?.nombre_es ?? "",
+            familia: ficha.producto?.categoria ?? "",
             version: ficha.version,
+            revision: (revision?.n ?? 0) + 1,
             anio: ficha.anio,
             estado: ficha.estado,
-            nota: "Datos orientativos. Confirmar disponibilidad con equipo técnico · famiq.com.ar",
+            nota: NOTA_AL_PIE,
           }}
+          producto={ficha.producto?.nombre_es ?? ""}
           assets={{ producto: "/ficha/producto.png", croquis: "/ficha/croquis.png" }}
         />
       </main>

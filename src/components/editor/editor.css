@@ -74,6 +74,19 @@
   align-items: end;
 }
 
+/* Los campos de las sub-listas no van dentro de .campo, así que no heredan
+   su borde: se lo declaran acá para que se vean igual. */
+.fila-campos > input,
+.fila-campos > select,
+.fila-lista > input,
+.fila-lista > textarea {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-1);
+  background: var(--bg-1);
+  min-width: 0;
+}
+
 .fila-lista {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 28px;

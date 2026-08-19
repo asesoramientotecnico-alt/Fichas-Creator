@@ -7,37 +7,45 @@ import type { Medidas } from "@/lib/paginado";
  * ejecutarla dentro de Chromium (page.evaluate), así que no puede cerrar
  * sobre imports ni sobre nada del módulo. A cambio, el PDF y la pantalla
  * miden con el MISMO código, y el reparto en hojas sale igual en los dos.
+ *
+ * El alto disponible se mide de punta a punta —del borde interior de la hoja
+ * al borde superior del pie— en lugar de sumar cabecera + pie + padding. La
+ * primera hoja y las interiores tienen cabeceras y padding distintos, y sumar
+ * los componentes uno por uno se desincroniza en cuanto el CSS cambia.
  */
 export function medirEnDocumento(): Medidas {
   const num = (v: string) => parseFloat(v) || 0;
 
-  const leerHoja = (cual: string) => {
+  const altoDisponible = (cual: string) => {
     const hoja = document.querySelector<HTMLElement>(`[data-medir-hoja="${cual}"]`);
-    if (!hoja) return null;
+    if (!hoja) return 0;
+
     const est = getComputedStyle(hoja);
-    const cabecera = hoja.querySelector(".ficha-cabecera");
-    const regla = hoja.querySelector(".regla-marca");
+    const caja = hoja.getBoundingClientRect();
+    const grilla = hoja.querySelector(".grilla-bloques");
     const pie = hoja.querySelector(".ficha-pie");
-    return {
-      // Alto útil: la hoja menos su padding vertical.
-      altoUtil: hoja.clientHeight - num(est.paddingTop) - num(est.paddingBottom),
-      altoCabecera:
-        (cabecera ? cabecera.getBoundingClientRect().height : 0) +
-        (regla ? regla.getBoundingClientRect().height : 0),
-      altoPie: pie ? pie.getBoundingClientRect().height : 0,
-    };
+
+    // Desde donde arranca el primer bloque: el borde de contenido de la
+    // grilla, no su borde de caja — la grilla tiene padding arriba y ese
+    // espacio no está disponible para bloques.
+    const arriba = grilla
+      ? grilla.getBoundingClientRect().top + num(getComputedStyle(grilla).paddingTop)
+      : caja.top + num(est.paddingTop);
+    // ...hasta donde empieza el pie. No se usa la posición del pie: en la
+    // hoja de muestra la grilla va vacía y el margen automático del pie se
+    // come todo el espacio libre, así que su posición no dice nada. El alto
+    // del pie sí es el real, y el borde inferior del contenido también.
+    const abajo =
+      caja.bottom - num(est.paddingBottom) - (pie ? pie.getBoundingClientRect().height : 0);
+
+    return abajo - arriba;
   };
 
-  const primera = leerHoja("primera");
-  const interior = leerHoja("interior");
-
-  // La grilla aporta su propio padding superior y su separación entre filas.
+  // La grilla aporta su propia separación entre filas.
   const grilla = document.createElement("div");
   grilla.className = "grilla-bloques";
   document.body.appendChild(grilla);
-  const estiloGrilla = getComputedStyle(grilla);
-  const separacionFilas = num(estiloGrilla.rowGap);
-  const paddingGrilla = num(estiloGrilla.paddingTop);
+  const separacionFilas = num(getComputedStyle(grilla).rowGap);
   grilla.remove();
 
   const altoBloque: Record<string, number> = {};
@@ -48,10 +56,8 @@ export function medirEnDocumento(): Medidas {
 
   return {
     altoBloque,
-    altoCabeceraPrimera: (primera?.altoCabecera ?? 0) + paddingGrilla,
-    altoCabeceraInterior: (interior?.altoCabecera ?? 0) + paddingGrilla,
-    altoPie: primera?.altoPie ?? 0,
-    altoUtil: primera?.altoUtil ?? 0,
+    altoUtilPrimera: altoDisponible("primera"),
+    altoUtilInterior: altoDisponible("interior"),
     separacionFilas,
     // La misma separación que .bloques-al-pie declara en ficha.css.
     separacionPie: separacionFilas,

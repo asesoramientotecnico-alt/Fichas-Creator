@@ -51,12 +51,14 @@ variable `NEXT_PUBLIC_*`.
 
 ## 3. Fuente de verdad estética
 
-El repo incluye `templates/ficha-tecnica/` con el HTML/CSS original de la ficha (2 páginas A4) y sus
-assets. Ese CSS es la **fuente única de verdad visual**.
+La fuente única de verdad visual es `referencia/Plantilla ficha tecnica FAMIQ V26.pdf` — la plantilla
+"Válvula esférica 3 cuerpos Socket Weld", de 3 páginas A4. Reemplazó al HTML/CSS original de
+`templates/ficha-tecnica/`, que queda como referencia histórica. El cambio, lo que revirtió y lo que
+rompió están en `docs/rediseno-plantilla-v26.md`.
 
-Tarea de la milestone 2: portar ese HTML a componentes React, uno por tipo de bloque, preservando
-selectores y valores de CSS. No rediseñar, no "mejorar" el diseño, no cambiar spacing ni tipografías.
-Si un valor de CSS parece raro, dejarlo como está y anotarlo.
+Los valores de `src/components/ficha/ficha.css` se miden sobre ese PDF: geometría, tamaños de
+tipografía, colores y tracking. No se ajustan a ojo. No rediseñar, no "mejorar" el diseño, no cambiar
+spacing ni tipografías. Si un valor parece raro, dejarlo como está y anotarlo.
 
 La misma vista React se usa para el preview en pantalla y para el render del PDF. Nunca dos
 implementaciones.
@@ -76,7 +78,9 @@ Una ficha **no** tiene un schema de campos fijo. Es un array ordenado de bloques
 de bloque tiene un componente React y un estilo propio. Los campos varían libremente; la estética no
 puede variar porque el usuario solo elige entre tipos existentes.
 
-Tipos de la v1 (derivados de la ficha de referencia "Tuerca autofrenante con inserto de nylon"):
+Tipos de la v1. Los once primeros vienen de la ficha de referencia "Tuerca autofrenante con inserto
+de nylon"; los cuatro últimos se agregaron con la plantilla V26 "Válvula esférica 3 cuerpos Socket
+Weld" (ver `docs/rediseno-plantilla-v26.md`):
 
 | Tipo | Contenido | Notas |
 |---|---|---|
@@ -91,6 +95,15 @@ Tipos de la v1 (derivados de la ficha de referencia "Tuerca autofrenante con ins
 | `tabla-dim` | Una o dos tablas dimensionales a dos columnas, con unidad | Ej. métricas / pulgadas |
 | `barra-destacada` | Etiqueta + valor sobre fondo gris | Ej. "Presentación" |
 | `chart` | SVG generado server-side desde una tabla de datos | Sin IA. Milestone 6 |
+| `imagen` | Imagen con rótulo opcional, sufijo y marco opcional | Ej. "Presión / temperatura", el despiece. Asset desde la librería de la familia |
+| `lista-componentes` | Ítem numerado → componente → material → cantidad, con banda de encabezado oscura. Se reparte en dos columnas | Ej. "Lista de componentes". Las cuatro columnas son fijas: el número remite al croquis |
+| `tabla-ancha` | Tabla de N columnas a ancho completo, con banda oscura y nota que define los símbolos | Ej. "Dimensiones y códigos". La nota es obligatoria |
+| `codigos` | Pares código → medida en dos columnas, con imagen y nota opcionales | Ej. "Repuestos · Kit de sellos" |
+
+Variantes, que no son tipos nuevos:
+
+- `tabla-kv` con `orientacion: "vertical"`: rótulo arriba del valor en vez de a su izquierda. Es la
+  disposición que necesita una columna angosta. Mismos campos, misma estética.
 
 Reglas:
 
@@ -98,7 +111,11 @@ Reglas:
   tabla. No se agregan tipos ad hoc para una ficha puntual.
 - Ningún bloque acepta HTML libre ni CSS inline del usuario.
 - El paginado A4 lo maneja el CSS (`@page`, `page-break`). Los bloques no declaran en qué página van;
-  se declara un separador de página explícito como bloque de control si hace falta.
+  el título de una hoja interior lo aporta el bloque que la abre (`tituloHoja`), no la hoja.
+- La hoja es una grilla de **12 pistas**. Un bloque declara su ancho como una de cuatro fracciones
+  de esas 12 —`un-tercio` (4), `medio` (6), `dos-tercios` (8), `completo` (12)— y nada más. Un
+  bloque alto puede declarar `filasGrilla: 2` para que los dos bloques que lo siguen se apilen a su
+  costado.
 
 ---
 
@@ -196,7 +213,7 @@ Supabase. CRUD de producto y ficha. Sin editor de bloques, sin IA, sin PDF.
 ### M2 — Render
 Template portado a componentes React por tipo de bloque. Vista de ficha en pantalla, pixel-fiel al
 HTML original. Datos hardcodeados o desde DB.
-*Aceptación:* la ficha de referencia renderizada es indistinguible del original en captura.
+*Aceptación:* la plantilla V26 renderizada es indistinguible del original en captura.
 
 ### M3 — Editor y revisiones
 Editor de bloques (agregar, reordenar, eliminar, editar campos). Cada guardado crea una revisión.
@@ -206,8 +223,9 @@ Historial + pantalla de diff entre revisiones. Estados de ficha.
 ### M4 — PDF
 Export A4 con `puppeteer-core` + `@sparticuz/chromium`. Fuentes embebidas. Marca de agua BORRADOR
 si el estado no es `aprobada`/`publicada`.
-*Aceptación:* la ficha de referencia sale en exactamente 2 páginas A4, sin página en blanco, con las
-tipografías correctas.
+*Aceptación:* la plantilla V26 sale en exactamente 3 páginas A4 y la ficha de la tuerca en 2, sin
+página en blanco, con las tipografías correctas y sin ningún carácter sin cobertura en los subsets
+embebidos.
 
 ### M5 — Revisor IA
 Botón, endpoint, panel de hallazgos con aceptar/rechazar por campo, persistencia en `sugerencia_ia`.

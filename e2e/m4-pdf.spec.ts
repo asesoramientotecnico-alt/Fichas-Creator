@@ -5,8 +5,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 /**
- * M4 — criterio de aceptación: la ficha de referencia sale en exactamente
- * 2 páginas A4, sin página en blanco, con las tipografías correctas.
+ * M4 — criterio de aceptación: la ficha de referencia sale en la cantidad
+ * exacta de páginas A4 de su plantilla, sin página en blanco y con las
+ * tipografías correctas.
+ *
+ * Hay dos fichas de referencia. La plantilla V26 (válvula esférica) es la
+ * fuente de verdad visual y sale en 3 hojas; la de la tuerca autofrenante
+ * sigue siendo el fixture del revisor con IA (§6) y sale en 2.
  */
 
 const EMAIL = process.env.E2E_EMAIL!;
@@ -48,14 +53,14 @@ print(json.dumps({
   return JSON.parse(execFileSync("python3", ["-c", py], { encoding: "utf8" }));
 }
 
-test("la ficha de referencia sale en exactamente 2 páginas A4 sin página en blanco", async ({ request }) => {
+test("la plantilla V26 sale en exactamente 3 páginas A4 sin página en blanco", async ({ request }) => {
   const r = await request.get("/api/vista-previa/pdf");
   expect(r.status()).toBe(200);
   expect(r.headers()["content-type"]).toContain("application/pdf");
 
   const info = inspeccionar(await r.body());
 
-  expect(info.paginas).toBe(2);
+  expect(info.paginas).toBe(3);
   for (const [ancho, alto] of info.tamanos) {
     expect(Math.abs(ancho - 210)).toBeLessThan(1);
     expect(Math.abs(alto - 297)).toBeLessThan(1);
@@ -64,8 +69,49 @@ test("la ficha de referencia sale en exactamente 2 páginas A4 sin página en bl
   for (const n of info.caracteres) expect(n).toBeGreaterThan(100);
 });
 
+test("la ficha de la tuerca sigue saliendo en exactamente 2 páginas A4", async ({ request }) => {
+  const info = inspeccionar(await (await request.get("/api/vista-previa/pdf?ficha=tuerca")).body());
+
+  expect(info.paginas).toBe(2);
+  for (const [ancho, alto] of info.tamanos) {
+    expect(Math.abs(ancho - 210)).toBeLessThan(1);
+    expect(Math.abs(alto - 297)).toBeLessThan(1);
+  }
+  for (const n of info.caracteres) expect(n).toBeGreaterThan(100);
+});
+
+test("los cuatro tipos de bloque nuevos llegan al PDF", async ({ request }) => {
+  const dir = mkdtempSync(join(tmpdir(), "v26-"));
+  const archivo = join(dir, "f.pdf");
+  writeFileSync(archivo, await (await request.get("/api/vista-previa/pdf")).body());
+
+  const py = `
+import pymupdf, json
+doc = pymupdf.open(${JSON.stringify(archivo)})
+texto = chr(10).join(p.get_text() for p in doc)
+print(json.dumps(texto))
+`;
+  const texto: string = JSON.parse(execFileSync("python3", ["-c", py], { encoding: "utf8" }));
+
+  // lista-componentes: banda de encabezado y el ítem 17 del despiece.
+  expect(texto).toContain("Perno de unión");
+  // tabla-ancha: una fila de cotas y su nota de símbolos.
+  expect(texto).toContain("351682");
+  expect(texto).toContain("paso de esfera");
+  // codigos: un código de repuesto y su nota.
+  expect(texto).toContain("350846");
+  expect(texto).toContain("Cada kit incluye");
+  // tabla-kv vertical y el sufijo del rótulo de imagen.
+  expect(texto).toContain("EMPAQUETADURA");
+  // El título de cada hoja interior sale del bloque que la abre.
+  expect(texto).toContain("Despiece y componentes");
+  expect(texto).toContain("Tabla de cotas y códigos");
+});
+
 test("las tipografías van embebidas, incluida la bold italic de las cotas", async ({ request }) => {
-  const r = await request.get("/api/vista-previa/pdf");
+  // Con la ficha de la tuerca: es la que tiene croquis, y sus símbolos de cota
+  // son el único uso de Roboto bold italic.
+  const r = await request.get("/api/vista-previa/pdf?ficha=tuerca");
   const info = inspeccionar(await r.body());
 
   expect(info.fuentesEmbebidas).toBeGreaterThan(0);
@@ -123,8 +169,8 @@ test("el PDF de una ficha real exige sesión y respeta su estado", async ({ page
 });
 
 test("el paginado abre hojas de más en vez de recortar", async ({ request }) => {
-  // El fixture entra en dos hojas. Duplicando su contenido, el paginado tiene
-  // que abrir más hojas — antes se recortaba en silencio.
+  // La plantilla entra en tres hojas. Duplicando su contenido, el paginado
+  // tiene que abrir más hojas — antes se recortaba en silencio.
   const conteos: number[] = [];
   for (const repetir of [1, 2, 3]) {
     const r = await request.get(`/api/vista-previa/pdf?repetir=${repetir}`);
@@ -140,7 +186,7 @@ test("el paginado abre hojas de más en vez de recortar", async ({ request }) =>
     }
   }
 
-  expect(conteos[0]).toBe(2);
+  expect(conteos[0]).toBe(3);
   // Más contenido, más hojas: monótono y estrictamente creciente.
   expect(conteos[1]).toBeGreaterThan(conteos[0]);
   expect(conteos[2]).toBeGreaterThan(conteos[1]);
