@@ -105,6 +105,38 @@ export async function urlDeAsset(storagePath: string, segundos = 3600): Promise<
   return data?.signedUrl ?? null;
 }
 
+/**
+ * Las URLs firmadas de varios assets en UN viaje.
+ *
+ * `urlDeAsset` en un bucle costaba una petición y un cliente nuevo por asset:
+ * una familia con cuarenta croquis eran cuarenta viajes secuenciales en cada
+ * carga de la ficha. `createSignedUrls` los firma todos juntos.
+ */
+export async function urlesDeAssetsPorRuta(
+  rutas: string[],
+  segundos = 3600,
+): Promise<Record<string, string>> {
+  const supabase = await crearClienteServidor();
+  return Object.fromEntries(await urlesDeAssets(supabase, rutas, segundos));
+}
+
+async function urlesDeAssets(
+  supabase: Awaited<ReturnType<typeof crearClienteServidor>>,
+  rutas: string[],
+  segundos = 3600,
+): Promise<Map<string, string>> {
+  const salida = new Map<string, string>();
+  if (rutas.length === 0) return salida;
+
+  const { data } = await supabase.storage.from(BUCKET).createSignedUrls(rutas, segundos);
+  for (const firma of data ?? []) {
+    // Un asset sin URL firmada no se puede mostrar; se omite en vez de dejar
+    // un src roto en la ficha.
+    if (firma.path && firma.signedUrl) salida.set(firma.path, firma.signedUrl);
+  }
+  return salida;
+}
+
 export interface AssetDisponible {
   id: string;
   tipo: AssetTipo;
@@ -174,11 +206,12 @@ export async function assetsDeFamilia(
     .order("created_at", { ascending: false })
     .overrideTypes<Fila[]>();
 
+  const filas = data ?? [];
+  const urles = await urlesDeAssets(supabase, filas.map((a) => a.storage_path));
+
   const lista: AssetDisponible[] = [];
-  for (const a of data ?? []) {
-    const url = await urlDeAsset(a.storage_path);
-    // Un asset sin URL firmada no se puede mostrar; se omite en vez de dejar
-    // un src roto en la ficha.
+  for (const a of filas) {
+    const url = urles.get(a.storage_path);
     if (!url) continue;
     mapa[a.id] = url;
     // La lista son las opciones del editor. Lleva los de la familia y los que

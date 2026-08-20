@@ -251,3 +251,44 @@ textarea {
   background: transparent;
   text-decoration: line-through;
 }
+
+/* Barra de búsqueda y filtros de una lista. */
+.filtros-lista {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.filtros-lista .campo { margin: 0; }
+.filtros-lista-buscar { flex: 1 1 18rem; min-width: 0; }
+.filtros-lista select { min-width: 11rem; }
+
+/* Paginado de una lista. */
+.paginado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-top: var(--space-4);
+}
+
+.paginado-conteo,
+.paginado-actual {
+  font-size: var(--fs-micro);
+  color: var(--fg-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.paginado-botones {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.paginado [aria-disabled="true"] {
+  opacity: .4;
+  pointer-events: none;
+}

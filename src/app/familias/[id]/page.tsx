@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Cabecera from "@/components/Cabecera";
 import { crearClienteServidor } from "@/lib/supabase/cliente-servidor";
-import { urlDeAsset } from "@/app/acciones-assets";
+import { urlesDeAssetsPorRuta } from "@/app/acciones-assets";
 import { comoBloques, type AssetTipo } from "@/lib/tipos";
 import SubirAsset from "./SubirAsset";
 import Librería from "./Libreria";
@@ -35,10 +35,10 @@ export default async function FamiliaPage({ params }: { params: Promise<{ id: st
     .order("created_at", { ascending: false })
     .overrideTypes<FilaAsset[]>();
 
-  // El bucket es privado: cada asset se muestra con una URL firmada.
-  const conUrl = await Promise.all(
-    (assets ?? []).map(async (a) => ({ ...a, url: await urlDeAsset(a.storage_path) })),
-  );
+  // El bucket es privado: cada asset se muestra con una URL firmada. Se firman
+  // todas en un viaje, no una por asset.
+  const urles = await urlesDeAssetsPorRuta((assets ?? []).map((a) => a.storage_path));
+  const conUrl = (assets ?? []).map((a) => ({ ...a, url: urles[a.storage_path] ?? null }));
 
   const bloques = comoBloques(familia.plantilla_bloques);
 
