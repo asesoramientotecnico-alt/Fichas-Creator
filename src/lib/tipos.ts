@@ -72,6 +72,18 @@ export type TipoBloque =
  */
 export type AnchoBloque = "medio" | "completo" | "dos-tercios" | "un-tercio";
 
+/**
+ * Cuánto de su caja ocupa la imagen de un bloque, en porcentaje.
+ *
+ * Son pasos y no un número libre, por el mismo motivo que el ancho de un bloque
+ * son cuatro fracciones y no píxeles: con pasos, dos fichas de la misma familia
+ * salen con la misma imagen del mismo tamaño. La ausencia del campo es 100, así
+ * que las fichas que ya estaban guardadas no cambian.
+ */
+export type EscalaImagen = 25 | 50 | 75 | 100;
+
+export const ESCALAS_IMAGEN: EscalaImagen[] = [25, 50, 75, 100];
+
 /** Pistas que ocupa cada ancho sobre las 12 de la grilla. */
 export const PISTAS_POR_ANCHO: Record<AnchoBloque, number> = {
   "un-tercio": 4,
@@ -109,6 +121,8 @@ export interface BloqueHeader extends BloqueBase {
   tituloEs: string;
   subtituloEn?: string;
   fotoAssetId?: string;
+  /** Tamaño de la foto dentro de su caja. Ver `EscalaImagen`. */
+  escalaImagen?: EscalaImagen;
   /**
    * Píldora de unidad de negocio que va arriba a la derecha en la primera
    * hoja. Es un asset raster provisto por diseño, no un componente: lleva
@@ -185,12 +199,33 @@ export interface BloqueChips extends BloqueBase {
  * inherentemente posicional: una cota tiene que apuntar a lo que mide.
  */
 export interface MarcaCota {
+  /**
+   * Texto de la marca. Con `assetId` puesto pasa a ser su texto alternativo, y
+   * lo que se dibuja es la imagen.
+   */
   simbolo: string;
   /** 0 a 100, desde el borde izquierdo de la imagen. */
   x: number;
   /** 0 a 100, desde el borde superior de la imagen. */
   y: number;
+  /**
+   * Imagen de la librería de la familia, en vez de texto. Es lo que permite
+   * poner los pictogramas de seguridad donde corresponde: son dibujos, no
+   * símbolos, y en la ficha de origen van sueltos sobre la hoja.
+   */
+  assetId?: string;
+  /**
+   * Alto de la marca con imagen, en milímetros. Va acotado entre 3 y 40: por
+   * debajo no se distingue el pictograma y por encima deja de ser una marca y
+   * es una figura, que para eso está el tipo imagen. Sin valor, 8 mm.
+   */
+  altoMm?: number;
 }
+
+/** Alto por omisión de una marca con imagen, y sus límites. */
+export const ALTO_MARCA_POR_OMISION = 8;
+export const ALTO_MARCA_MINIMO = 3;
+export const ALTO_MARCA_MAXIMO = 40;
 
 export interface BloqueCroquis extends BloqueBase {
   tipo: "croquis";
@@ -198,6 +233,8 @@ export interface BloqueCroquis extends BloqueBase {
   cotas: { simbolo: string; nombre: string }[];
   /** Símbolos colocados sobre el dibujo. La leyenda sigue en `cotas`. */
   marcas?: MarcaCota[];
+  /** Tamaño del croquis dentro de su marco. Ver `EscalaImagen`. */
+  escalaImagen?: EscalaImagen;
 }
 
 export interface BloqueTablaDim extends BloqueBase {
@@ -239,6 +276,8 @@ export interface BloqueImagen extends BloqueBase {
   alt: string;
   /** Símbolos colocados sobre la imagen. Ver `MarcaCota`. */
   marcas?: MarcaCota[];
+  /** Tamaño de la imagen dentro de su caja. Ver `EscalaImagen`. */
+  escalaImagen?: EscalaImagen;
   /** Marco de 1px sobre fondo claro. El despiece lo lleva; un gráfico no. */
   marco?: boolean;
 }
@@ -279,6 +318,8 @@ export interface BloqueCodigos extends BloqueBase {
   sufijo?: string;
   pares: { codigo: string; medida: string }[];
   assetId?: string;
+  /** Tamaño de la imagen dentro de su caja. Ver `EscalaImagen`. */
+  escalaImagen?: EscalaImagen;
   alt?: string;
   nota?: string;
 }

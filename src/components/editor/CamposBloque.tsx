@@ -1,12 +1,44 @@
 "use client";
 
 import { useId } from "react";
-import type { Bloque, AssetTipo, MarcaCota } from "@/lib/tipos";
+import type { Bloque, AssetTipo, MarcaCota, EscalaImagen } from "@/lib/tipos";
+import {
+  ALTO_MARCA_MAXIMO,
+  ALTO_MARCA_MINIMO,
+  ALTO_MARCA_POR_OMISION,
+  ESCALAS_IMAGEN,
+} from "@/lib/tipos";
 import type { AssetDisponible } from "@/app/acciones-assets";
 import { UNIDADES_NEGOCIO } from "@/lib/unidades-negocio";
 import { posicionInicial } from "@/lib/marcas-cota";
 
 /** Editores de campo por tipo de bloque. Ninguno acepta HTML ni estilos. */
+
+/** Tamaño de la imagen del bloque, en pasos. */
+function EscalaDeImagen({
+  valor,
+  onChange,
+}: {
+  valor?: EscalaImagen;
+  onChange: (v: EscalaImagen | undefined) => void;
+}) {
+  return (
+    <Opcion
+      etiqueta="Tamaño de la imagen"
+      valor={String(valor ?? 100)}
+      opciones={ESCALAS_IMAGEN.map((e) => ({
+        valor: String(e),
+        nombre: e === 100 ? "Tamaño normal" : `${e}% del normal`,
+      }))}
+      onChange={(v) => {
+        const n = Number(v) as EscalaImagen;
+        // 100 se guarda como ausente: es el valor por omisión y así el diff de
+        // revisiones no marca un cambio donde no hubo ninguno.
+        onChange(n === 100 ? undefined : n);
+      }}
+    />
+  );
+}
 
 /**
  * Símbolos colocados encima de la imagen. Acá se agregan, se nombran y se
@@ -18,46 +50,84 @@ import { posicionInicial } from "@/lib/marcas-cota";
  */
 function MarcasEncima({
   marcas,
+  assetsDisponibles,
   onChange,
 }: {
   marcas: MarcaCota[];
+  assetsDisponibles: AssetDisponible[];
   onChange: (marcas: MarcaCota[]) => void;
 }) {
+  const cambiar = (i: number, parcial: Partial<MarcaCota>) =>
+    onChange(marcas.map((o, j) => (j === i ? { ...o, ...parcial } : o)));
+
   return (
     <div className="campo">
-      <label>Símbolos sobre la imagen</label>
+      <label>Marcas sobre la imagen</label>
       <p className="paleta-vacia">
         {marcas.length === 0
-          ? "Agregá un símbolo y arrastralo sobre la hoja hasta el punto que mide."
-          : "Arrastrá cada símbolo sobre la hoja para ubicarlo."}
+          ? "Un símbolo de cota o un pictograma, puesto en el punto que corresponde. Agregá uno y arrastralo sobre la hoja."
+          : "Arrastrá cada marca sobre la hoja para ubicarla."}
       </p>
       <div className="sub-lista">
         {marcas.map((m, i) => (
-          <div className="fila-lista" key={i}>
-            <div className="fila-campos" style={{ gridTemplateColumns: "1fr 76px" }}>
-              <input
-                value={m.simbolo}
-                placeholder="Ød"
-                aria-label={`Símbolo ${i + 1}`}
-                onChange={(e) =>
-                  onChange(marcas.map((o, j) => (j === i ? { ...o, simbolo: e.target.value } : o)))
-                }
+          <div className="marca-editor" key={i}>
+            <div className="fila-lista">
+              <div className="fila-campos" style={{ gridTemplateColumns: "1fr 76px" }}>
+                <input
+                  value={m.simbolo}
+                  placeholder={m.assetId ? "Descripción del pictograma" : "Ød"}
+                  aria-label={`Símbolo ${i + 1}`}
+                  onChange={(e) => cambiar(i, { simbolo: e.target.value })}
+                />
+                <span className="marca-posicion">
+                  {Math.round(m.x)}% · {Math.round(m.y)}%
+                </span>
+              </div>
+              <BotonQuitar
+                titulo="Quitar marca"
+                onClick={() => onChange(marcas.filter((_, j) => j !== i))}
               />
-              <span className="marca-posicion">
-                {Math.round(m.x)}% · {Math.round(m.y)}%
-              </span>
             </div>
-            <BotonQuitar
-              titulo="Quitar símbolo"
-              onClick={() => onChange(marcas.filter((_, j) => j !== i))}
-            />
+
+            {/* Con imagen la marca deja de ser un símbolo y pasa a ser un
+                pictograma: es lo que permite poner los iconos de seguridad
+                donde van, en vez de forzarlos dentro de un bloque. */}
+            <div className="fila-campos" style={{ gridTemplateColumns: "1fr 96px" }}>
+              <SelectorAsset
+                etiqueta={`Imagen de la marca ${i + 1}`}
+                valor={m.assetId}
+                disponibles={assetsDisponibles}
+                onChange={(v) => cambiar(i, { assetId: v })}
+              />
+              {m.assetId ? (
+                <label className="campo">
+                  <span>Alto (mm)</span>
+                  <input
+                    type="number"
+                    min={ALTO_MARCA_MINIMO}
+                    max={ALTO_MARCA_MAXIMO}
+                    step={1}
+                    value={m.altoMm ?? ALTO_MARCA_POR_OMISION}
+                    aria-label={`Alto de la marca ${i + 1} en milímetros`}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      cambiar(i, {
+                        altoMm: Number.isFinite(n)
+                          ? Math.min(ALTO_MARCA_MAXIMO, Math.max(ALTO_MARCA_MINIMO, n))
+                          : ALTO_MARCA_POR_OMISION,
+                      });
+                    }}
+                  />
+                </label>
+              ) : null}
+            </div>
           </div>
         ))}
       </div>
       <BotonAgregar
         onClick={() => onChange([...marcas, { simbolo: "", ...posicionInicial(marcas.length) }])}
       >
-        Agregar símbolo sobre la imagen
+        Agregar marca sobre la imagen
       </BotonAgregar>
     </div>
   );
@@ -214,6 +284,10 @@ export default function CamposBloque({
           <SelectorAsset
             etiqueta="Foto de producto" tipo="foto" valor={bloque.fotoAssetId}
             disponibles={assetsDisponibles} onChange={(v) => set({ fotoAssetId: v })}
+          />
+          <EscalaDeImagen
+            valor={bloque.escalaImagen}
+            onChange={(v) => set({ escalaImagen: v })}
           />
         </>
       );
@@ -393,6 +467,10 @@ export default function CamposBloque({
             etiqueta="Croquis" tipo="croquis" valor={bloque.assetId}
             disponibles={assetsDisponibles} onChange={(v) => set({ assetId: v })}
           />
+          <EscalaDeImagen
+            valor={bloque.escalaImagen}
+            onChange={(v) => set({ escalaImagen: v })}
+          />
           <div className="sub-lista">
             {bloque.cotas.map((cota, i) => (
               <div className="fila-lista" key={i}>
@@ -413,6 +491,7 @@ export default function CamposBloque({
           <BotonAgregar onClick={() => set({ cotas: [...bloque.cotas, { simbolo: "", nombre: "" }] })}>Agregar cota</BotonAgregar>
           <MarcasEncima
             marcas={bloque.marcas ?? []}
+            assetsDisponibles={assetsDisponibles}
             onChange={(marcas) => set({ marcas: marcas.length ? marcas : undefined })}
           />
         </>
@@ -503,8 +582,13 @@ export default function CamposBloque({
             etiqueta="Imagen" valor={bloque.assetId}
             disponibles={assetsDisponibles} onChange={(v) => set({ assetId: v })}
           />
+          <EscalaDeImagen
+            valor={bloque.escalaImagen}
+            onChange={(v) => set({ escalaImagen: v })}
+          />
           <MarcasEncima
             marcas={bloque.marcas ?? []}
+            assetsDisponibles={assetsDisponibles}
             onChange={(marcas) => set({ marcas: marcas.length ? marcas : undefined })}
           />
         </>
@@ -659,6 +743,10 @@ export default function CamposBloque({
           <SelectorAsset
             etiqueta="Imagen" valor={bloque.assetId}
             disponibles={assetsDisponibles} onChange={(v) => set({ assetId: v })}
+          />
+          <EscalaDeImagen
+            valor={bloque.escalaImagen}
+            onChange={(v) => set({ escalaImagen: v })}
           />
           <Texto etiqueta="Descripción de la imagen" valor={bloque.alt ?? ""} onChange={(v) => set({ alt: v })} />
         </>

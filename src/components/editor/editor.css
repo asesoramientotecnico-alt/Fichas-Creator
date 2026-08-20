@@ -417,3 +417,19 @@ textarea { resize: vertical; min-height: 4.5em; }
 .lienzo .marca-cota:hover { outline: 1px solid var(--famiq-red); }
 
 .zoom-real { color: var(--fg-3); font-variant-numeric: tabular-nums; }
+
+/* Una marca es varios campos: se agrupa para que no se confunda con la
+   siguiente cuando hay tres o cuatro. */
+.marca-editor {
+  display: grid;
+  gap: var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px dashed var(--border-1);
+}
+.marca-editor:last-child { border-bottom: none; padding-bottom: 0; }
+.marca-editor .campo span {
+  font-size: var(--fs-micro);
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}

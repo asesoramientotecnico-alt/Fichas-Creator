@@ -82,16 +82,27 @@ export function borrarMarca(bloque: Bloque, indice: number): Bloque {
 }
 
 /**
- * El índice que le corresponde a una marca del DOM.
+ * Si la marca tiene algo que mostrar.
  *
- * En la ficha sólo se dibujan las marcas CON símbolo, así que el índice del
- * elemento no es el del array cuando alguna está vacía. Esto traduce uno al
- * otro; sin la traducción, arrastrar una marca movería otra.
+ * Vive acá y no en el componente porque lo usan los dos lados y tienen que
+ * coincidir: la ficha dibuja las marcas que pasan este filtro, y `indiceReal`
+ * traduce el índice del elemento dibujado al del array. Si los criterios se
+ * separan, arrastrar una marca mueve otra.
+ */
+export function seDibuja(m: MarcaCota): boolean {
+  // Un pictograma no necesita texto: el dibujo ya dice qué es, y el símbolo
+  // pasa a ser su alternativa para lectores de pantalla.
+  return Boolean(m.simbolo.trim() || m.assetId);
+}
+
+/**
+ * El índice del array que le corresponde a la marca número `indiceVisible` de
+ * las dibujadas. Las que no se dibujan no cuentan.
  */
 export function indiceReal(marcas: MarcaCota[], indiceVisible: number): number {
   let vistas = -1;
   for (let i = 0; i < marcas.length; i++) {
-    if (!marcas[i].simbolo.trim()) continue;
+    if (!seDibuja(marcas[i])) continue;
     vistas += 1;
     if (vistas === indiceVisible) return i;
   }

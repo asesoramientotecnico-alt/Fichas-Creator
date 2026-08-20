@@ -207,7 +207,7 @@ test("los símbolos de cota se colocan arrastrando y llegan a la hoja y al PDF",
   await page.getByPlaceholder("diámetro nominal").first().fill("Paso de esfera");
 
   // Dos símbolos sobre la imagen. Nacen en el centro.
-  const agregar = page.getByRole("button", { name: "Agregar símbolo sobre la imagen" });
+  const agregar = page.getByRole("button", { name: "Agregar marca sobre la imagen" });
   await agregar.click();
   await page.getByLabel("Símbolo 1").fill("Ød");
   await agregar.click();
@@ -262,7 +262,7 @@ test("un símbolo sin texto no se dibuja en la hoja", async ({ page }) => {
     .locator(".paleta")
     .getByRole("button", { name: /Agregar Croquis/ })
     .click();
-  await page.getByRole("button", { name: "Agregar símbolo sobre la imagen" }).click();
+  await page.getByRole("button", { name: "Agregar marca sobre la imagen" }).click();
 
   // Nace vacío: no hay nada que mostrar, así que no se dibuja. Un cuadrito
   // vacío sobre el dibujo sería basura en la ficha que ve el cliente.

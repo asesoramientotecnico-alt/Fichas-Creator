@@ -124,6 +124,13 @@ Variantes, que no son tipos nuevos:
 
 - `tabla-kv` con `orientacion: "vertical"`: rótulo arriba del valor en vez de a su izquierda. Es la
   disposición que necesita una columna angosta. Mismos campos, misma estética.
+- Cualquier bloque con imagen y `escalaImagen`: 25, 50 o 75 en vez del tamaño natural. Son pasos y
+  no un número libre, por el mismo motivo que el ancho son cuatro fracciones: con pasos, dos fichas
+  de la misma familia salen con la misma imagen del mismo tamaño. No hay paso por encima del
+  natural, porque la imagen ya llena su columna; para agrandarla se ensancha el bloque.
+- `texto-rico` con `columnas: 2`: los párrafos se reparten en dos columnas dentro del ancho del
+  bloque, con el rótulo arriba a ancho completo. Sirve para una descripción larga que a ancho
+  completo deja renglones de más de cien caracteres.
 - `croquis` e `imagen` con `marcas`: símbolos colocados ENCIMA de la imagen, en el punto que miden.
   Las coordenadas van en porcentaje de la caja de la imagen, no en píxeles, así la marca cae en el
   mismo punto del dibujo en pantalla, en el PDF y con el bloque a un tercio o a ancho completo. Se
@@ -131,13 +138,19 @@ Variantes, que no son tipos nuevos:
   y es otra cosa: la lista símbolo → significado que va al costado. Ver la precisión de §1
   requisito 1 sobre por qué la posición es libre y la apariencia no.
 
+  Una marca puede llevar `assetId` en vez de texto, y entonces es un pictograma: es lo que permite
+  poner los iconos de seguridad donde van en la ficha de origen, que es sueltos sobre la hoja y no
+  dentro de un bloque. Su `altoMm` va acotado entre 3 y 40: por debajo no se distingue el dibujo, y
+  por encima deja de ser una marca y es una figura, que para eso está el tipo `imagen`.
+
 Reglas:
 
 - Agregar un tipo nuevo es una decisión de producto: requiere componente, estilo y entrada en esta
   tabla. No se agregan tipos ad hoc para una ficha puntual.
 - Ningún bloque acepta HTML libre ni CSS inline del usuario.
 - El paginado A4 lo maneja el CSS (`@page`, `page-break`). Los bloques no declaran en qué página van;
-  el título de una hoja interior lo aporta el bloque que la abre (`tituloHoja`), no la hoja.
+  el título de una hoja interior lo aporta el bloque que la abre (`tituloHoja`), no la hoja — se
+  edita en el inspector, y si ningún bloque lo declara la hoja dice "Continuación".
 - La hoja es una grilla de **12 pistas**. Un bloque declara su ancho como una de cuatro fracciones
   de esas 12 —`un-tercio` (4), `medio` (6), `dos-tercios` (8), `completo` (12)— y nada más. Un
   bloque alto puede declarar `filasGrilla: 2` para que los dos bloques que lo siguen se apilen a su

@@ -960,3 +960,44 @@
 .lienzo-cotas > div[aria-hidden="true"] {
   min-height: 28mm;
 }
+
+/* ------------------------------------------------------------
+   Tamaño de la imagen de un bloque
+   ------------------------------------------------------------
+   Tres pasos por debajo del tamaño natural. No hay paso por encima porque la
+   imagen ya llena el ancho de su columna: para agrandarla se ensancha el
+   bloque, que es la decisión de la grilla. Sin el atributo, todo queda como
+   estaba — las fichas guardadas no cambian. */
+
+.bloque-header[data-escala="75"] .foto { height: 25.7mm; }
+.bloque-header[data-escala="50"] .foto { height: 17.2mm; }
+.bloque-header[data-escala="25"] .foto { height: 8.6mm; }
+
+.bloque-croquis[data-escala="75"] .lienzo-cotas { width: 75%; margin-inline: auto; }
+.bloque-croquis[data-escala="50"] .lienzo-cotas { width: 50%; margin-inline: auto; }
+.bloque-croquis[data-escala="25"] .lienzo-cotas { width: 25%; margin-inline: auto; }
+
+.bloque-imagen[data-escala="75"] .lienzo-cotas { width: 75%; }
+.bloque-imagen[data-escala="50"] .lienzo-cotas { width: 50%; }
+.bloque-imagen[data-escala="25"] .lienzo-cotas { width: 25%; }
+
+/* Un bloque de imagen sin imagen reserva menos espacio si está en escala
+   chica: si no, el hueco vacío ocuparía más que la figura que va a ir ahí. */
+.bloque-imagen[data-escala="50"] .lienzo-cotas > div[aria-hidden="true"],
+.bloque-croquis[data-escala="50"] .lienzo-cotas > div[aria-hidden="true"] { min-height: 16mm; }
+.bloque-imagen[data-escala="25"] .lienzo-cotas > div[aria-hidden="true"],
+.bloque-croquis[data-escala="25"] .lienzo-cotas > div[aria-hidden="true"] { min-height: 9mm; }
+
+/* Una marca con imagen no lleva el recuadro ni el fondo del símbolo de texto:
+   el pictograma ya trae su propia forma, y encerrarlo lo ensuciaría. */
+.marca-cota[data-imagen="true"] {
+  padding: 0;
+  border: none;
+  background: none;
+  width: auto;
+  object-fit: contain;
+}
+
+.bloque-codigos[data-escala="75"] .figura { width: 75%; }
+.bloque-codigos[data-escala="50"] .figura { width: 50%; }
+.bloque-codigos[data-escala="25"] .figura { width: 25%; }

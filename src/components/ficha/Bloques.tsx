@@ -17,6 +17,12 @@ import type {
   BloqueCodigos,
   MarcaCota,
 } from "@/lib/tipos";
+import {
+  ALTO_MARCA_MAXIMO,
+  ALTO_MARCA_MINIMO,
+  ALTO_MARCA_POR_OMISION,
+} from "@/lib/tipos";
+import { seDibuja } from "@/lib/marcas-cota";
 import { generarChartSvg, seriesATabla } from "@/lib/chart";
 
 /**
@@ -24,6 +30,16 @@ import { generarChartSvg, seriesATabla } from "@/lib/chart";
  * estilos del usuario: sólo eligen entre los tipos que existen, y cada
  * tipo trae su estética fija.
  */
+
+/**
+ * Escala de la imagen como atributo, para que la traduzca el CSS igual que
+ * `data-ancho`. Se omite cuando es 100, así el HTML de una ficha que ya estaba
+ * guardada no cambia.
+ */
+function escalaDe(bloque: { escalaImagen?: number }): string | undefined {
+  const e = bloque.escalaImagen;
+  return e && e !== 100 ? String(e) : undefined;
+}
 
 /** Filas de la grilla que ocupa el bloque, si ocupa más de una. */
 function filasDe(bloque: { filasGrilla?: number }): string | undefined {
@@ -38,21 +54,47 @@ function filasDe(bloque: { filasGrilla?: number }): string | undefined {
  * atributo para que el editor pueda arrastrarla; en el PDF el atributo es
  * inerte.
  */
-function MarcasDeCota({ marcas }: { marcas?: MarcaCota[] }) {
-  const conSimbolo = (marcas ?? []).filter((m) => m.simbolo.trim());
-  if (conSimbolo.length === 0) return null;
+function MarcasDeCota({
+  marcas,
+  assets,
+}: {
+  marcas?: MarcaCota[];
+  assets?: Record<string, string>;
+}) {
+  // El criterio de qué se dibuja es compartido con `indiceReal`: si se separan,
+  // arrastrar una marca en el editor movería otra.
+  const visibles = (marcas ?? []).filter(seDibuja);
+  if (visibles.length === 0) return null;
   return (
     <div className="marcas-cota">
-      {conSimbolo.map((m, i) => (
-        <span
-          className="marca-cota"
-          key={i}
-          data-marca-indice={i}
-          style={{ left: `${m.x}%`, top: `${m.y}%` }}
-        >
-          {m.simbolo}
-        </span>
-      ))}
+      {visibles.map((m, i) => {
+        const src = m.assetId ? assets?.[m.assetId] : undefined;
+        const alto = Math.min(
+          ALTO_MARCA_MAXIMO,
+          Math.max(ALTO_MARCA_MINIMO, m.altoMm ?? ALTO_MARCA_POR_OMISION),
+        );
+        return src ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            className="marca-cota"
+            data-imagen="true"
+            key={i}
+            data-marca-indice={i}
+            src={src}
+            alt={m.simbolo}
+            style={{ left: `${m.x}%`, top: `${m.y}%`, height: `${alto}mm` }}
+          />
+        ) : (
+          <span
+            className="marca-cota"
+            key={i}
+            data-marca-indice={i}
+            style={{ left: `${m.x}%`, top: `${m.y}%` }}
+          >
+            {m.simbolo}
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -81,7 +123,8 @@ function Encabezado({ etiqueta, sufijo }: { etiqueta: string; sufijo?: string })
 export function Header({ bloque, fotoSrc }: { bloque: BloqueHeader; fotoSrc?: string }) {
   return (
     <section className="bloque bloque-header"
-      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "completo"}>
+      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "completo"}
+      data-escala={escalaDe(bloque)}>
       <div>
         <h1>{bloque.tituloEs}</h1>
         {bloque.subtituloEn ? <p className="nombre-en">{bloque.subtituloEn}</p> : null}
@@ -205,10 +248,19 @@ export function Chips({ bloque }: { bloque: BloqueChips }) {
   );
 }
 
-export function Croquis({ bloque, src }: { bloque: BloqueCroquis; src?: string }) {
+export function Croquis({
+  bloque,
+  src,
+  assets,
+}: {
+  bloque: BloqueCroquis;
+  src?: string;
+  assets?: Record<string, string>;
+}) {
   return (
     <section className="bloque bloque-croquis"
-      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "completo"}>
+      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "completo"}
+      data-escala={escalaDe(bloque)}>
       <div className="marco">
         <div className="lienzo-cotas">
           {src ? (
@@ -217,7 +269,7 @@ export function Croquis({ bloque, src }: { bloque: BloqueCroquis; src?: string }
           ) : (
             <div aria-hidden="true" />
           )}
-          <MarcasDeCota marcas={bloque.marcas} />
+          <MarcasDeCota marcas={bloque.marcas} assets={assets} />
         </div>
         <div className="cotas">
           {bloque.cotas.map((cota, i) => (
@@ -280,7 +332,15 @@ export function BarraDestacada({ bloque }: { bloque: BloqueBarraDestacada }) {
   );
 }
 
-export function Imagen({ bloque, src }: { bloque: BloqueImagen; src?: string }) {
+export function Imagen({
+  bloque,
+  src,
+  assets,
+}: {
+  bloque: BloqueImagen;
+  src?: string;
+  assets?: Record<string, string>;
+}) {
   return (
     <section
       className="bloque bloque-imagen"
@@ -288,6 +348,7 @@ export function Imagen({ bloque, src }: { bloque: BloqueImagen; src?: string }) 
       data-ancho={bloque.ancho ?? "medio"}
       data-filas={filasDe(bloque)}
       data-marco={bloque.marco ? "true" : undefined}
+      data-escala={escalaDe(bloque)}
     >
       {bloque.etiqueta ? (
         <Encabezado etiqueta={bloque.etiqueta} sufijo={bloque.sufijo} />
@@ -300,7 +361,7 @@ export function Imagen({ bloque, src }: { bloque: BloqueImagen; src?: string }) 
           ) : (
             <div aria-hidden="true" />
           )}
-          <MarcasDeCota marcas={bloque.marcas} />
+          <MarcasDeCota marcas={bloque.marcas} assets={assets} />
         </div>
       </div>
     </section>
@@ -402,7 +463,8 @@ export function Codigos({ bloque, src }: { bloque: BloqueCodigos; src?: string }
 
   return (
     <section className="bloque bloque-codigos"
-      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "completo"}>
+      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "completo"}
+      data-escala={escalaDe(bloque)}>
       <Encabezado etiqueta={bloque.etiqueta} sufijo={bloque.sufijo} />
       <div className="cuerpo">
         <div>
@@ -500,7 +562,13 @@ export function RenderBloque({
     case "chips":
       return <Chips bloque={bloque} />;
     case "croquis":
-      return <Croquis bloque={bloque} src={bloque.assetId ? assets?.[bloque.assetId] : undefined} />;
+      return (
+        <Croquis
+          bloque={bloque}
+          src={bloque.assetId ? assets?.[bloque.assetId] : undefined}
+          assets={assets}
+        />
+      );
     case "tabla-dim":
       return <TablaDim bloque={bloque} />;
     case "barra-destacada":
@@ -508,7 +576,13 @@ export function RenderBloque({
     case "chart":
       return <Chart bloque={bloque} />;
     case "imagen":
-      return <Imagen bloque={bloque} src={bloque.assetId ? assets?.[bloque.assetId] : undefined} />;
+      return (
+        <Imagen
+          bloque={bloque}
+          src={bloque.assetId ? assets?.[bloque.assetId] : undefined}
+          assets={assets}
+        />
+      );
     case "lista-componentes":
       return <ListaComponentes bloque={bloque} />;
     case "tabla-ancha":

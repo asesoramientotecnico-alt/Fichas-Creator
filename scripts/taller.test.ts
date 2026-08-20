@@ -12,6 +12,13 @@ import {
 } from "../src/lib/orden-bloques";
 import { revisarBloques } from "../src/lib/validacion";
 import {
+  ALTO_MARCA_MAXIMO,
+  ALTO_MARCA_MINIMO,
+  ALTO_MARCA_POR_OMISION,
+  ESCALAS_IMAGEN,
+} from "../src/lib/tipos";
+import { TITULO_INTERIOR_POR_OMISION, tituloDeHoja } from "../src/lib/paginado";
+import {
   admiteMarcas,
   agregarMarca,
   borrarMarca,
@@ -19,6 +26,7 @@ import {
   indiceReal,
   marcasDe,
   moverMarca,
+  seDibuja,
 } from "../src/lib/marcas-cota";
 
 const casos: [string, () => boolean][] = [];
@@ -260,7 +268,7 @@ chk("imagen también admite marcas", () => {
   return admiteMarcas(img) && marcasDe(agregarMarca(img, "A")).length === 1;
 });
 
-chk("indiceReal saltea las marcas sin símbolo, que no se dibujan", () => {
+chk("indiceReal saltea las marcas que no se dibujan", () => {
   const marcas = [
     { simbolo: "", x: 0, y: 0 },
     { simbolo: "A", x: 0, y: 0 },
@@ -271,6 +279,59 @@ chk("indiceReal saltea las marcas sin símbolo, que no se dibujan", () => {
   // esta traducción, arrastrar "B" movería otra marca.
   return indiceReal(marcas, 0) === 1 && indiceReal(marcas, 1) === 3 &&
          indiceReal(marcas, 2) === -1;
+});
+
+chk("una marca con imagen y sin texto cuenta como dibujada", () => {
+  // El criterio tiene que ser el mismo que usa la ficha para dibujar, o
+  // arrastrar el pictograma movería otra marca.
+  const marcas = [
+    { simbolo: "", x: 0, y: 0 },
+    { simbolo: "", x: 0, y: 0, assetId: "a1" },
+    { simbolo: "Ød", x: 0, y: 0 },
+  ];
+  return seDibuja(marcas[1]) && !seDibuja(marcas[0]) &&
+         indiceReal(marcas, 0) === 1 && indiceReal(marcas, 1) === 2;
+});
+
+// ------------------------------------------------------------
+// Escala de la imagen y marcas con pictograma
+// ------------------------------------------------------------
+
+chk("una marca con imagen se dibuja aunque no tenga texto", () => {
+  // Un pictograma no necesita símbolo escrito: el dibujo ya dice qué es. El
+  // texto pasa a ser su alternativa para lectores de pantalla.
+  const b = agregarMarca(croquis(), "");
+  const conImagen = moverMarca(b, 0, 10, 10);
+  const [m] = marcasDe(conImagen);
+  return m.simbolo === "" && m.x === 10;
+});
+
+chk("el alto de una marca con imagen se acota a los límites", () => {
+  // Por debajo del mínimo no se distingue el pictograma; por encima del máximo
+  // deja de ser una marca y es una figura, que para eso está el tipo imagen.
+  return ALTO_MARCA_MINIMO === 3 && ALTO_MARCA_MAXIMO === 40 &&
+         ALTO_MARCA_POR_OMISION >= ALTO_MARCA_MINIMO &&
+         ALTO_MARCA_POR_OMISION <= ALTO_MARCA_MAXIMO;
+});
+
+chk("las escalas de imagen son pasos, no un número libre", () => {
+  return ESCALAS_IMAGEN.join() === "25,50,75,100";
+});
+
+chk("el título de hoja por omisión ya no es el de la ficha de la tuerca", () => {
+  // Estaba hardcodeado como "Tabla de cotas y dimensiones" en cuatro lugares, y
+  // no todas las segundas hojas son cotas.
+  return TITULO_INTERIOR_POR_OMISION === "Continuación" &&
+         !TITULO_INTERIOR_POR_OMISION.toLowerCase().includes("cotas");
+});
+
+chk("un bloque declara el título de la hoja que abre", () => {
+  const abre: Bloque = { ...txt("t"), tituloHoja: "Repuestos y códigos" };
+  return tituloDeHoja([abre, txt("u")], TITULO_INTERIOR_POR_OMISION) === "Repuestos y códigos";
+});
+
+chk("sin bloque que lo declare, la hoja usa el título por omisión", () => {
+  return tituloDeHoja([txt("t")], TITULO_INTERIOR_POR_OMISION) === "Continuación";
 });
 
 let ok = 0;
