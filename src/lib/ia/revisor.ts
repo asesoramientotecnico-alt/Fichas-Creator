@@ -10,15 +10,16 @@ import { SISTEMA, mensajeUsuario } from "./prompt";
  */
 
 // El modelo lo fija §2. Se lee del entorno para poder cambiarlo sin tocar
-// código, pero el valor por omisión es el que dice el documento.
-const MODELO = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
+// código, pero el valor por omisión es el que dice el documento: Haiku, para
+// arrancar barato mientras se valida el revisor contra fichas reales.
+const MODELO = process.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5-20251001";
 
 /**
  * Esfuerzo del modelo. Por omisión `low`, y no por ahorrar: medido sobre la
- * ficha de referencia, `low` tarda 23 s y detecta los cuatro hallazgos de §6,
- * mientras `medium` tarda 107 s y `high` 220 s sin encontrar más — `high`
- * encontró incluso uno menos. Y 60 s es el techo de una función serverless en
- * el plan Hobby de Vercel, así que un esfuerzo mayor no llegaría a terminar.
+ * ficha de referencia con Sonnet, `low` tarda 23 s y detecta los cuatro
+ * hallazgos de §6, mientras `medium` tarda 107 s y `high` 220 s sin encontrar
+ * más. Sólo se manda con modelos que soportan pensamiento adaptativo — ver
+ * `soportaAdaptativo` — Haiku 4.5 rechaza el parámetro con 400.
  */
 const ESFUERZO = (process.env.ANTHROPIC_EFFORT ?? "low") as
   | "low"
@@ -26,6 +27,15 @@ const ESFUERZO = (process.env.ANTHROPIC_EFFORT ?? "low") as
   | "high"
   | "xhigh"
   | "max";
+
+/**
+ * Los modelos "clásicos" (Haiku 4.5 entre ellos) no aceptan `thinking:
+ * {type: "adaptive"}` ni `output_config.effort`: la API devuelve 400. Sólo
+ * la familia Opus 5/4.6+, Sonnet 5/4.6 y Fable 5 los soporta.
+ */
+function soportaAdaptativo(modelo: string): boolean {
+  return /^claude-(opus-(5|4-[6-9])|sonnet-(5|4-6)|fable-5|mythos)/.test(modelo);
+}
 
 const SEVERIDADES = ["error", "inconsistencia", "mejora"] as const;
 
@@ -68,15 +78,18 @@ function clienteAnthropic(): ClienteRevision {
       // El cliente sin argumentos resuelve la credencial del entorno.
       const client = new Anthropic();
 
+      const adaptativo = soportaAdaptativo(MODELO);
+
       const respuesta = await client.messages.parse({
         model: MODELO,
         max_tokens: 16000,
         system: sistema,
         // Revisar designaciones normativas y cruzar texto contra tablas es
-        // razonamiento, no extracción.
-        thinking: { type: "adaptive" },
+        // razonamiento, no extracción — pero sólo se pide en los modelos que
+        // lo soportan (ver soportaAdaptativo).
+        ...(adaptativo ? { thinking: { type: "adaptive" as const } } : {}),
         output_config: {
-          effort: ESFUERZO,
+          ...(adaptativo ? { effort: ESFUERZO } : {}),
           format: zodOutputFormat(Respuesta),
         },
         messages: [{ role: "user", content: usuario }],

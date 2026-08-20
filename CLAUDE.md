@@ -42,7 +42,7 @@ Tres requisitos que definen el producto:
 | DB / Storage / Auth | Supabase (Postgres + Storage + Auth), RLS activo |
 | Estilos | CSS del template original, portado a CSS Modules o vanilla CSS. **No Tailwind para la ficha** |
 | PDF | `puppeteer-core` + `@sparticuz/chromium` en route handler |
-| IA | Anthropic API (`claude-sonnet-4-6`) desde route handler server-side |
+| IA | Anthropic API (`claude-haiku-4-5-20251001`) desde route handler server-side |
 
 La API key de Anthropic vive **solo** en el servidor. Nunca en un componente cliente, nunca en una
 variable `NEXT_PUBLIC_*`.
