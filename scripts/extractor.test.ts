@@ -2,6 +2,7 @@
  * Pruebas del extractor de PDF. No llaman al modelo: el cliente se inyecta.
  * Uso: tsx scripts/extractor.test.ts
  */
+import { readFileSync } from "node:fs";
 import {
   aBloques,
   extraerDePdf,
@@ -18,7 +19,7 @@ function plano(tipo: BloqueExtraido["tipo"], parcial: Partial<BloqueExtraido> = 
   return {
     tipo,
     ancho: "completo",
-    etiqueta: "", sufijo: "", nota: "", alt: "", valor: "",
+    etiqueta: "", sufijo: "", nota: "", alt: "", valor: "", imagenRef: "",
     familia: "", subfamilia: "", tituloEs: "", subtituloEn: "",
     orientacion: "horizontal", marco: false,
     lineas: [], columnas: [], filas: [], pares: [], cotas: [],
@@ -168,10 +169,98 @@ chk("se respeta el ancho que eligió el modelo", () => {
 });
 
 // ------------------------------------------------------------
+// aBloques: asignación de las imágenes extraídas del PDF
+// ------------------------------------------------------------
+
+/** Resolvedor de prueba: `imagen1` → `asset-1`, y nada más existe. */
+const resolver = (ref: string) =>
+  ({ imagen1: "asset-1", imagen2: "asset-2" })[ref];
+
+chk("header: la imagen asignada va a fotoAssetId", () => {
+  const [b] = aBloques(
+    [plano("header", { tituloEs: "Disco", imagenRef: "imagen1" })],
+    resolver,
+  );
+  return b.tipo === "header" && b.fotoAssetId === "asset-1";
+});
+
+chk("imagen y croquis reciben su assetId", () => {
+  const [img, cro] = aBloques(
+    [
+      plano("imagen", { alt: "Curva", imagenRef: "imagen1" }),
+      plano("croquis", {
+        imagenRef: "imagen2",
+        cotas: [{ simbolo: "Ød", nombre: "Paso" }],
+      }),
+    ],
+    resolver,
+  );
+  return img.tipo === "imagen" && img.assetId === "asset-1" &&
+         cro.tipo === "croquis" && cro.assetId === "asset-2";
+});
+
+chk("codigos recibe su assetId", () => {
+  const [b] = aBloques(
+    [plano("codigos", {
+      etiqueta: "Repuestos", imagenRef: "imagen2",
+      pares: [{ izquierda: "350834", derecha: '1/2\"' }],
+    })],
+    resolver,
+  );
+  return b.tipo === "codigos" && b.assetId === "asset-2";
+});
+
+chk("una referencia que no existe deja el bloque sin imagen", () => {
+  const [b] = aBloques([plano("imagen", { alt: "x", imagenRef: "imagen9" })], resolver);
+  return b.tipo === "imagen" && b.assetId === undefined;
+});
+
+chk("sin referencia el bloque queda sin imagen, como antes", () => {
+  const [b] = aBloques([plano("imagen", { alt: "x" })], resolver);
+  return b.tipo === "imagen" && b.assetId === undefined;
+});
+
+chk("sin resolvedor ningún bloque recibe imagen", () => {
+  const [b] = aBloques([plano("imagen", { alt: "x", imagenRef: "imagen1" })]);
+  return b.tipo === "imagen" && b.assetId === undefined;
+});
+
+chk("los tipos que no llevan imagen ignoran la referencia", () => {
+  const [b] = aBloques(
+    [plano("texto-rico", { etiqueta: "Uso", lineas: ["a"], imagenRef: "imagen1" })],
+    resolver,
+  );
+  return b.tipo === "texto-rico" && !("assetId" in b);
+});
+
+// ------------------------------------------------------------
 // extraerDePdf: validación de entrada y de la respuesta
 // ------------------------------------------------------------
 
-const PDF_MINIMO = new Uint8Array(Buffer.from("%PDF-1.4\n%%EOF\n"));
+/**
+ * Un PDF de una hoja, válido y sin imágenes. Tiene que ser un PDF de verdad y
+ * no un `%PDF-` con basura: el extractor le pide las imágenes a mupdf, y con
+ * un archivo roto mupdf escribe avisos de reparación que ensucian la salida de
+ * las pruebas.
+ */
+const PDF_MINIMO = new Uint8Array(
+  Buffer.from(
+  "JVBERi0xLjcKJcK1wrYKJSBXcml0dGVuIGJ5IE11UERGIDEuMjguMgoKMSAwIG9iago8PC9UeXBl" +
+  "L0NhdGFsb2cvUGFnZXMgMiAwIFIvSW5mbzw8L1Byb2R1Y2VyKE11UERGIDEuMjguMik+Pj4+CmVu" +
+  "ZG9iagoKMiAwIG9iago8PC9UeXBlL1BhZ2VzL0NvdW50IDEvS2lkc1s0IDAgUl0+PgplbmRvYmoK" +
+  "CjMgMCBvYmoKPDwvRm9udDw8L2hlbHYgNSAwIFI+Pj4+CmVuZG9iagoKNCAwIG9iago8PC9UeXBl" +
+  "L1BhZ2UvTWVkaWFCb3hbMCAwIDU5NSA4NDJdL1JvdGF0ZSAwL1Jlc291cmNlcyAzIDAgUi9QYXJl" +
+  "bnQgMiAwIFIvQ29udGVudHNbNiAwIFJdPj4KZW5kb2JqCgo1IDAgb2JqCjw8L1R5cGUvRm9udC9T" +
+  "dWJ0eXBlL1R5cGUxL0Jhc2VGb250L0hlbHZldGljYS9FbmNvZGluZy9XaW5BbnNpRW5jb2Rpbmc+" +
+  "PgplbmRvYmoKCjYgMCBvYmoKPDwvTGVuZ3RoIDgyL0ZpbHRlci9GbGF0ZURlY29kZT4+CnN0cmVh" +
+  "bQp4nA3GoQqAUAwF0L6v2B+4zb07BTEIFpuwJkbFoMHi9/s45dBLU5KyVMphHG6cDzXXcX+s9Sdv" +
+  "gwM9WnRQEziKSUhYFBQYdNxzoTlppR+QAxDSCmVuZHN0cmVhbQplbmRvYmoKCnhyZWYKMCA3CjAw" +
+  "MDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDA0MiAwMDAwMCBuIAowMDAwMDAwMTIwIDAwMDAwIG4g" +
+  "CjAwMDAwMDAxNzIgMDAwMDAgbiAKMDAwMDAwMDIxMyAwMDAwMCBuIAowMDAwMDAwMzIwIDAwMDAw" +
+  "IG4gCjAwMDAwMDA0MDkgMDAwMDAgbiAKCnRyYWlsZXIKPDwvU2l6ZSA3L1Jvb3QgMSAwIFIvSURb" +
+  "KFxuYzs3XDMwMlwyNjU9Ij1nJlxiMlwwMDB2Mik8NDBDMzE5NUI1NkE0MDJBQzA3OTAzQjZCNzdF" +
+  "NEYzOUQ+XT4+CnN0YXJ0eHJlZgo1NTkKJSVFT0YK", "base64"),
+);
 
 function clienteQueDevuelve(parsed: unknown): ClienteExtraccion {
   return { async extraer() { return { parsed }; } };
@@ -218,6 +307,166 @@ chk("si no queda ningún bloque con contenido, se informa el fallo", async () =>
   } catch (e) {
     return e instanceof ErrorExtraccion;
   }
+});
+
+// El PDF del disco, que tiene tres imágenes de contenido. Sirve para probar
+// el camino de las imágenes con el cliente inyectado, sin llamar al modelo.
+const PDF_DISCO = new Uint8Array(
+  readFileSync("referencia/Ficha Tecnica - Disco de corte SG Steelox.pdf"),
+);
+
+chk("un valor de presentación fuera del enum se normaliza, no tumba la ficha", async () => {
+  // Caso real: el modelo devolvió `orientacion` fuera del enum en los ocho
+  // bloques de una ficha. Antes eso descartaba la transcripción completa.
+  const crudo = plano("tabla-kv", {
+    etiqueta: "Datos",
+    pares: [{ izquierda: "Ancho", derecha: "2,8 mm" }],
+    columnas: [{ titulo: "A", alineacion: "izquierda" }],
+  }) as unknown as Record<string, unknown>;
+  crudo.orientacion = "";
+  crudo.ancho = "gigante";
+  crudo.marco = null;
+  crudo.columnas = [{ titulo: "A", alineacion: "centrada" }];
+
+  const r = await extraerDePdf(
+    PDF_MINIMO,
+    clienteQueDevuelve({ bloques: [crudo], omitido: [] }),
+  );
+  const b = r.bloques[0];
+  return b.tipo === "tabla-kv" && b.orientacion === "horizontal" && b.ancho === "completo";
+});
+
+chk("normalizar la presentación NO completa campos de contenido", async () => {
+  // La leniencia es sólo para lo presentacional: un bloque sin datos se sigue
+  // cayendo, no se rellena con algo plausible (§4bis regla 2).
+  const crudo = plano("tabla-kv", { etiqueta: "Datos" }) as unknown as Record<string, unknown>;
+  crudo.orientacion = "";
+  try {
+    await extraerDePdf(PDF_MINIMO, clienteQueDevuelve({ bloques: [crudo], omitido: [] }));
+    return false;
+  } catch (e) {
+    return e instanceof ErrorExtraccion;
+  }
+});
+
+chk("una imagen que el modelo no asigna se informa, no se sube en silencio", async () => {
+  let recibidas = 0;
+  const r = await extraerDePdf(
+    PDF_DISCO,
+    clienteQueDevuelve({
+      bloques: [plano("header", { tituloEs: "Disco" })],
+      omitido: [],
+    }),
+    async (imgs) => {
+      recibidas = imgs.length;
+      return new Map();
+    },
+  );
+  // Ninguna asignada: no se llama a la subida y las tres se informan.
+  return recibidas === 0 && r.imagenesUsadas === 0 &&
+         r.omitido.filter((o) => o.includes("no se asignó")).length === 3;
+});
+
+chk("sólo se le pasan a la subida las imágenes asignadas", async () => {
+  let recibidas: string[] = [];
+  const r = await extraerDePdf(
+    PDF_DISCO,
+    clienteQueDevuelve({
+      bloques: [
+        plano("header", { tituloEs: "Disco", imagenRef: "imagen1" }),
+        plano("imagen", { alt: "Escala", imagenRef: "imagen3" }),
+      ],
+      omitido: [],
+    }),
+    async (imgs) => {
+      recibidas = imgs.map((i) => i.id);
+      return new Map(imgs.map((i) => [i.id, `asset-${i.id}`]));
+    },
+  );
+  const header = r.bloques.find((b) => b.tipo === "header");
+  return recibidas.join() === "imagen1,imagen3" && r.imagenesUsadas === 2 &&
+         header?.tipo === "header" && header.fotoAssetId === "asset-imagen1" &&
+         // La que quedó sin asignar es la única que se informa.
+         r.omitido.filter((o) => o.includes("no se asignó")).length === 1 &&
+         r.omitido.some((o) => o.startsWith("imagen2"));
+});
+
+chk("la foto del header entra como foto y el resto como croquis", async () => {
+  let tipos: string[] = [];
+  await extraerDePdf(
+    PDF_DISCO,
+    clienteQueDevuelve({
+      bloques: [
+        plano("header", { tituloEs: "Disco", imagenRef: "imagen1" }),
+        plano("imagen", { alt: "Escala", imagenRef: "imagen2" }),
+      ],
+      omitido: [],
+    }),
+    async (imgs) => {
+      tipos = imgs.map((i) => i.tipoAsset);
+      return new Map();
+    },
+  );
+  return tipos.join() === "foto,croquis";
+});
+
+chk("una referencia repetida se le asigna al primer bloque, no a los dos", async () => {
+  const r = await extraerDePdf(
+    PDF_DISCO,
+    clienteQueDevuelve({
+      bloques: [
+        plano("imagen", { alt: "Primera", imagenRef: "imagen1" }),
+        plano("imagen", { alt: "Segunda", imagenRef: "imagen1" }),
+      ],
+      omitido: [],
+    }),
+    async (imgs) => new Map(imgs.map((i) => [i.id, `asset-${i.id}`])),
+  );
+  // Las dos apuntan al mismo asset porque el modelo lo pidió, pero se subió
+  // una sola vez: la lista que llega a la subida no tiene repetidos.
+  return r.imagenesUsadas === 1 && r.bloques.length === 2;
+});
+
+chk("una referencia inventada no rompe nada y la imagen se informa", async () => {
+  const r = await extraerDePdf(
+    PDF_DISCO,
+    clienteQueDevuelve({
+      bloques: [plano("header", { tituloEs: "Disco", imagenRef: "imagen42" })],
+      omitido: [],
+    }),
+    async (imgs) => new Map(imgs.map((i) => [i.id, `asset-${i.id}`])),
+  );
+  const header = r.bloques.find((b) => b.tipo === "header");
+  return r.imagenesUsadas === 0 &&
+         header?.tipo === "header" && header.fotoAssetId === undefined &&
+         r.omitido.filter((o) => o.includes("no se asignó")).length === 3;
+});
+
+chk("si la subida falla, la transcripción del texto igual sirve", async () => {
+  const r = await extraerDePdf(
+    PDF_DISCO,
+    clienteQueDevuelve({
+      bloques: [plano("header", { tituloEs: "Disco", imagenRef: "imagen1" })],
+      omitido: [],
+    }),
+    async () => { throw new Error("el bucket no responde"); },
+  );
+  const header = r.bloques.find((b) => b.tipo === "header");
+  return r.bloques.length === 1 && r.imagenesUsadas === 0 &&
+         header?.tipo === "header" && header.fotoAssetId === undefined;
+});
+
+chk("sin subidor las imágenes no se tocan y los bloques quedan sin asset", async () => {
+  const r = await extraerDePdf(
+    PDF_DISCO,
+    clienteQueDevuelve({
+      bloques: [plano("header", { tituloEs: "Disco", imagenRef: "imagen1" })],
+      omitido: [],
+    }),
+  );
+  const header = r.bloques.find((b) => b.tipo === "header");
+  return r.imagenesUsadas === 0 &&
+         header?.tipo === "header" && header.fotoAssetId === undefined;
 });
 
 chk("una extracción válida devuelve bloques, omitido y el conteo de descartados", async () => {

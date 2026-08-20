@@ -45,10 +45,10 @@ export default async function EditarFichaPage({
     .overrideTypes<{ id: string; n: number; bloques: unknown }>();
 
   // Los bloques con imagen se eligen de la librería de la familia (§7).
-  const assets = await assetsDeFamilia(ficha.producto?.familia_id ?? null);
+  const bloquesIniciales = comoBloques(revision?.bloques);
+  const assets = await assetsDeFamilia(ficha.producto?.familia_id ?? null, bloquesIniciales);
   // Punto de partida antes de editar: familia y píldora salen del bloque
   // header guardado. El Editor las vuelve a derivar en vivo mientras se edita.
-  const bloquesIniciales = comoBloques(revision?.bloques);
   const cabecera = datosDeCabecera(bloquesIniciales, assets.mapa);
 
   return (

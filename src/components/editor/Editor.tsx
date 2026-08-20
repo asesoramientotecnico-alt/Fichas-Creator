@@ -48,6 +48,7 @@ export default function Editor({
   const [verPrevia, setVerPrevia] = useState(false);
   const [extrayendo, setExtrayendo] = useState(false);
   const [omitido, setOmitido] = useState<string[]>([]);
+  const [resumenExtraccion, setResumenExtraccion] = useState<string | null>(null);
   const archivoPdf = useRef<HTMLInputElement>(null);
 
   // El diff contra la revisión cargada muestra en vivo qué se va a registrar.
@@ -94,6 +95,7 @@ export default function Editor({
     setExtrayendo(true);
     setError(null);
     setOmitido([]);
+    setResumenExtraccion(null);
     try {
       const cuerpo = new FormData();
       cuerpo.append("pdf", archivo);
@@ -103,8 +105,22 @@ export default function Editor({
         setError(datos.error ?? "No pudimos leer el PDF.");
         return;
       }
-      setBloques(datos.bloques as Bloque[]);
+      const nuevos = datos.bloques as Bloque[];
+      setBloques(nuevos);
       setOmitido((datos.omitido ?? []) as string[]);
+
+      const imagenes = (datos.imagenesUsadas ?? 0) as number;
+      const partes = [`${nuevos.length} bloque(s)`];
+      if (imagenes > 0) {
+        partes.push(
+          `${imagenes} ${imagenes === 1 ? "imagen" : "imágenes"} del PDF, ya en la librería de la familia`,
+        );
+      }
+      setResumenExtraccion(
+        `Se transcribió ${partes.join(" y ")}. Revisá antes de guardar.` +
+          (datos.aviso ? ` ${datos.aviso}` : ""),
+      );
+
       if (!comentario) setComentario(`Carga desde PDF: ${archivo.name}`);
     } catch {
       setError("No pudimos leer el PDF. Revisá la conexión y volvé a intentar.");
@@ -201,8 +217,9 @@ export default function Editor({
         <div>
           <h2>Cargar desde PDF</h2>
           <p style={{ fontSize: "var(--fs-micro)", color: "var(--fg-3)", margin: "var(--space-2) 0" }}>
-            Transcribe un PDF de ficha a bloques. No guarda nada: el resultado
-            queda en pantalla para que lo revises antes de crear la revisión.
+            Transcribe un PDF de ficha a bloques y le adjunta las imágenes que
+            encuentra. No crea ninguna revisión: el resultado queda en pantalla
+            para que lo revises antes de guardar.
           </p>
           <input
             ref={archivoPdf}
@@ -224,6 +241,17 @@ export default function Editor({
           >
             {extrayendo ? "Leyendo el PDF…" : "Elegir PDF…"}
           </button>
+          {resumenExtraccion ? (
+            <p
+              style={{
+                fontSize: "var(--fs-micro)",
+                color: "var(--fg-2)",
+                margin: "var(--space-3) 0 0",
+              }}
+            >
+              {resumenExtraccion}
+            </p>
+          ) : null}
           {omitido.length > 0 ? (
             <div className="aviso" style={{ marginTop: "var(--space-3)" }}>
               <strong>No se transcribió:</strong>

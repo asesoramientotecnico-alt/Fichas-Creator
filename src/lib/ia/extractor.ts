@@ -1,7 +1,13 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
-import type { AnchoBloque, Bloque } from "@/lib/tipos";
+import type { AnchoBloque, AssetTipo, Bloque } from "@/lib/tipos";
+import {
+  describirImagen,
+  imagenesDePdf,
+  inventarioParaModelo,
+  type ImagenExtraida,
+} from "@/lib/pdf/imagenes";
 
 /**
  * Extracción de bloques desde un PDF de ficha ya maquetado (§4bis).
@@ -22,9 +28,19 @@ import type { AnchoBloque, Bloque } from "@/lib/tipos";
  *   requisito 2). La extracción ahorra tipeo, no reemplaza la revisión
  *   humana.
  *
- * Las imágenes NO se extraen: el modelo no puede subir archivos. Los bloques
- * que llevan imagen salen sin `assetId` y con un `alt` que describe qué
- * imagen va ahí, para que la persona la elija de la librería de la familia.
+ * Las imágenes SÍ se extraen, pero no las extrae el modelo: las saca
+ * `src/lib/pdf/imagenes.ts` del PDF, byte a byte y sin IA. Al modelo se le
+ * pasa un inventario —`imagen1`, `imagen2`…— con la hoja y la posición de
+ * cada una, y lo único que decide es a qué bloque pertenece cada imagen,
+ * escribiendo su id en `imagenRef`. Elige de una lista cerrada: un id que no
+ * está en el inventario se descarta, igual que un `bloque_id` inexistente en
+ * el revisor. Así el modelo no puede inventar una imagen ni recortar mal una
+ * cota.
+ *
+ * Sólo se sube lo que quedó asignado a un bloque. Una imagen del inventario
+ * que el modelo no usó se le informa a la persona en vez de ensuciar la
+ * librería de la familia: es lo que pasa con la píldora de unidad de negocio,
+ * que sale del catálogo fijo y no de la ficha.
  */
 
 /** Haiku por omisión, igual que el revisor: la extracción es trabajo mecánico. */
@@ -43,7 +59,8 @@ export class ErrorExtraccion extends Error {}
 // `chart`, que no se transcribe: sus series son datos numéricos y el SVG lo
 // dibuja el servidor (§7).
 
-const ANCHO = z.enum(["completo", "dos-tercios", "medio", "un-tercio"]);
+const ANCHOS = ["completo", "dos-tercios", "medio", "un-tercio"] as const;
+const ANCHO = z.enum(ANCHOS);
 
 const TIPOS = [
   "header",
@@ -84,6 +101,12 @@ const BloqueExtraido = z.object({
   nota: z.string(),
   /** Descripción de la imagen del bloque (imagen, codigos, header). */
   alt: z.string(),
+  /**
+   * Id del inventario de imágenes que le corresponde a este bloque
+   * (`imagen1`, `imagen2`…), o "" si no lleva imagen. Aplica a header (la foto
+   * de producto), imagen, croquis y codigos.
+   */
+  imagenRef: z.string(),
   /** Valor único: inline-kv y barra-destacada. */
   valor: z.string(),
 
@@ -151,6 +174,12 @@ const Respuesta = z.object({
 
 export type BloqueExtraido = z.infer<typeof BloqueExtraido>;
 
+/**
+ * Traduce una referencia del inventario (`imagen2`) al assetId ya subido.
+ * Devuelve undefined si la referencia no existe o la imagen no se pudo subir.
+ */
+export type ResolverImagen = (ref: string) => string | undefined;
+
 export const SISTEMA = `Transcribís fichas técnicas de producto de FAMIQ (distribuidor de acero inoxidable) desde un PDF ya maquetado hacia una estructura de bloques tipados.
 
 Tu tarea es MECÁNICA: pasar lo que está escrito en el PDF a la estructura. No sos autor de la ficha.
@@ -164,6 +193,8 @@ Tu tarea es MECÁNICA: pasar lo que está escrito en el PDF a la estructura. No 
 3. NO RESUMAS NI REDACTES. Los párrafos van completos y textuales. No unas dos oraciones en una, no acortes, no mejores el estilo.
 
 4. LO QUE NO ENTRA EN UN BLOQUE VA A "omitido". Si el PDF tiene iconos sin texto, sellos de certificación, pictogramas o cualquier cosa que no puedas transcribir, describila en el array "omitido". No la fuerces dentro de un bloque ni la descartes.
+
+5. LAS IMÁGENES NO LAS ELEGÍS VOS, LAS ASIGNÁS. Al final de este mensaje viene el inventario de las imágenes que ya se extrajeron del PDF, cada una con su id, su hoja y su posición. Tu única decisión es a qué bloque pertenece cada una: escribís su id en "imagenRef". No inventes ids que no estén en el inventario y no uses el mismo id en dos bloques.
 
 # Cómo elegir el tipo de bloque
 
@@ -188,9 +219,27 @@ La hoja es una grilla de 12 pistas. "completo" (12) ocupa todo el ancho; "medio"
 
 Reglas: el header siempre "completo". Una tabla de muchas columnas, "completo". Dos secciones que en el PDF están lado a lado, "medio" cada una. Una sección corta que en el PDF ocupa toda la línea, "completo".
 
+# Imágenes
+
+El inventario del final lista las imágenes con su id, hoja y posición. Los cuatro tipos que llevan imagen son header (la foto de producto), imagen, croquis y codigos: en esos, "imagenRef" lleva el id de la imagen del inventario que corresponde. En todos los demás va "".
+
+Para emparejar, usá la posición: la imagen que está arriba a la derecha de la primera hoja es casi siempre la foto de producto del header; una imagen que está justo debajo o al lado del rótulo de una sección pertenece a esa sección.
+
+Reglas:
+- El "alt" lo escribís igual, describiendo qué se ve en la imagen. Sirve para que la persona la reconozca y para lectores de pantalla.
+- Si una imagen del inventario no le corresponde a ningún bloque, no la asignes. Se le informa a la persona; no la fuerces en un bloque para "usarla".
+- La píldora de unidad de negocio —el óvalo de color con el nombre de la línea, arriba a la derecha— NO se asigna nunca. Sale de un catálogo fijo de la app, no de la ficha.
+- Si el inventario está vacío, "imagenRef" va "" en todos los bloques.
+
 # Campos que no aplican
 
-El schema es una sola forma para todos los tipos, así que la mayoría de los campos no aplican al tipo que estás emitiendo. Dejá los que no aplican vacíos: "" en los textos, [] en los arrays, false en "marco", "horizontal" en "orientacion".
+El schema es una sola forma para todos los tipos, así que la mayoría de los campos no aplican al tipo que estás emitiendo. Dejá los que no aplican vacíos: "" en los textos y [] en los arrays.
+
+CUIDADO con tres campos que NO admiten "" y tienen que llevar siempre uno de sus valores, incluso cuando no aplican al tipo:
+- "orientacion": siempre "horizontal" o "vertical". Si el tipo no es tabla-kv, poné "horizontal".
+- "ancho": siempre "completo", "dos-tercios", "medio" o "un-tercio".
+- "marco": siempre true o false, nunca "" ni null. Si el tipo no es imagen, poné false.
+- "alineacion" de cada columna: siempre "izquierda" o "derecha".
 
 Los campos "sufijo", "nota", "subtituloEn" y "alt" van vacíos también cuando el tipo los admite pero el PDF no los tiene. No los rellenes con algo aproximado.
 
@@ -215,7 +264,11 @@ function clienteAnthropic(): ClienteExtraccion {
       const client = new Anthropic();
       const adaptativo = soportaAdaptativo(MODELO);
 
-      const respuesta = await client.messages.parse({
+      // Se pide con `create` y no con `parse` a propósito. El formato sigue
+      // restringiendo la generación igual, pero la validación queda de este
+      // lado: `parse` valida adentro y tira, y así no se puede normalizar la
+      // respuesta antes (ver `normalizarPresentacion`).
+      const respuesta = await client.messages.create({
         model: MODELO,
         max_tokens: 16000,
         system: sistema,
@@ -241,8 +294,22 @@ function clienteAnthropic(): ClienteExtraccion {
         );
       }
 
+      const json = respuesta.content
+        .filter((b): b is Anthropic.TextBlock => b.type === "text")
+        .map((b) => b.text)
+        .join("");
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(json);
+      } catch {
+        throw new ErrorExtraccion(
+          "El modelo no devolvió JSON válido. Se descarta la extracción completa.",
+        );
+      }
+
       return {
-        parsed: respuesta.parsed_output,
+        parsed,
         uso: {
           entrada: respuesta.usage.input_tokens,
           salida: respuesta.usage.output_tokens,
@@ -253,6 +320,60 @@ function clienteAnthropic(): ClienteExtraccion {
 }
 
 let contador = 0;
+
+/**
+ * Normaliza los campos de presentación de la respuesta antes de validarla.
+ *
+ * Existe por un caso real: el modelo devolvió `orientacion` fuera del enum en
+ * los ocho bloques de una ficha, y la validación descartó la transcripción
+ * completa. Perder una ficha entera porque el rótulo iba arriba en vez de al
+ * costado es un mal negocio.
+ *
+ * La línea es clara y no la cruza: acá sólo se corrigen campos que NO llevan
+ * datos del producto —cómo se dispone un rótulo, qué ancho ocupa un bloque, si
+ * una columna alinea a izquierda o derecha—, con un valor por omisión fijo. Un
+ * campo de contenido nunca se completa ni se adivina: eso es §4bis regla 2, y
+ * si viene mal el bloque se cae o la extracción falla, como corresponde.
+ */
+function normalizarPresentacion(parsed: unknown): unknown {
+  if (typeof parsed !== "object" || parsed === null) return parsed;
+  const raiz = parsed as { bloques?: unknown };
+  if (!Array.isArray(raiz.bloques)) return parsed;
+
+  const unaDe = <T extends string>(valor: unknown, validos: readonly T[], porOmision: T): T =>
+    typeof valor === "string" && (validos as readonly string[]).includes(valor)
+      ? (valor as T)
+      : porOmision;
+
+  const bloques = raiz.bloques.map((b) => {
+    if (typeof b !== "object" || b === null) return b;
+    const bloque = b as Record<string, unknown>;
+    const columnas = Array.isArray(bloque.columnas)
+      ? bloque.columnas.map((c) =>
+          typeof c === "object" && c !== null
+            ? {
+                ...(c as Record<string, unknown>),
+                alineacion: unaDe(
+                  (c as Record<string, unknown>).alineacion,
+                  ["izquierda", "derecha"] as const,
+                  "izquierda",
+                ),
+              }
+            : c,
+        )
+      : bloque.columnas;
+
+    return {
+      ...bloque,
+      ancho: unaDe(bloque.ancho, ANCHOS, "completo"),
+      orientacion: unaDe(bloque.orientacion, ["horizontal", "vertical"] as const, "horizontal"),
+      marco: typeof bloque.marco === "boolean" ? bloque.marco : false,
+      columnas,
+    };
+  });
+
+  return { ...raiz, bloques };
+}
 
 /** Id estable dentro de la extracción. El diff y la IA emparejan por id. */
 function nuevoId(tipo: string): string {
@@ -267,13 +388,23 @@ function nuevoId(tipo: string): string {
  * su etiqueta no ayuda a nadie, y dejarlo obligaría a la persona a borrarlo a
  * mano. Los campos opcionales vacíos se sacan en vez de guardarse como "".
  */
-export function aBloques(extraidos: BloqueExtraido[]): Bloque[] {
+export function aBloques(
+  extraidos: BloqueExtraido[],
+  resolverImagen: ResolverImagen = () => undefined,
+): Bloque[] {
   const salida: Bloque[] = [];
 
   const limpio = (v: string) => {
     const t = v.trim();
     return t === "" ? undefined : t;
   };
+  /**
+   * El assetId de la imagen que el modelo asignó a este bloque. Devuelve
+   * undefined si no asignó ninguna, si el id no existe en el inventario o si
+   * la imagen no se pudo subir: en los tres casos el bloque queda sin imagen y
+   * la persona la elige de la librería, que es el comportamiento anterior.
+   */
+  const asset = (e: BloqueExtraido) => resolverImagen(e.imagenRef.trim());
   const conDatos = (filas: string[][]) => filas.filter((f) => f.some((c) => c.trim() !== ""));
 
   for (const e of extraidos) {
@@ -288,6 +419,7 @@ export function aBloques(extraidos: BloqueExtraido[]): Bloque[] {
           subfamilia: e.subfamilia.trim(),
           tituloEs: e.tituloEs.trim(),
           subtituloEn: limpio(e.subtituloEn),
+          fotoAssetId: asset(e),
         });
         break;
       }
@@ -333,6 +465,7 @@ export function aBloques(extraidos: BloqueExtraido[]): Bloque[] {
           pares,
           nota: limpio(e.nota),
           alt: limpio(e.alt),
+          assetId: asset(e),
         });
         break;
       }
@@ -408,14 +541,16 @@ export function aBloques(extraidos: BloqueExtraido[]): Bloque[] {
       }
 
       case "imagen": {
-        // Sin assetId a propósito: la imagen la elige la persona de la
-        // librería de la familia. El alt dice qué imagen va.
+        // El assetId sale de la imagen que el modelo asignó del inventario.
+        // Si no asignó ninguna, el bloque queda con su caja vacía y el alt
+        // diciendo qué imagen va, para que la persona la elija de la librería.
         salida.push({
           ...base, tipo: "imagen",
           etiqueta: limpio(e.etiqueta),
           sufijo: limpio(e.sufijo),
           marco: e.marco,
           alt: e.alt.trim(),
+          assetId: asset(e),
         });
         break;
       }
@@ -425,7 +560,7 @@ export function aBloques(extraidos: BloqueExtraido[]): Bloque[] {
           .filter((c) => c.simbolo.trim() || c.nombre.trim())
           .map((c) => ({ simbolo: c.simbolo.trim(), nombre: c.nombre.trim() }));
         if (cotas.length === 0) break;
-        salida.push({ ...base, tipo: "croquis", cotas });
+        salida.push({ ...base, tipo: "croquis", cotas, assetId: asset(e) });
         break;
       }
 
@@ -468,12 +603,66 @@ export interface ResultadoExtraccion {
   omitido: string[];
   /** Cuántos bloques devolvió el modelo y se descartaron por venir vacíos. */
   descartados: number;
+  /** Cuántas imágenes del PDF quedaron asignadas a un bloque. */
+  imagenesUsadas: number;
   uso?: { entrada: number; salida: number };
+}
+
+/**
+ * Sube al bucket las imágenes que el modelo asignó a un bloque y devuelve
+ * `id del inventario → assetId`. La inyecta la ruta, que es la que tiene la
+ * sesión y la familia; el extractor no habla con la base para poder probarse
+ * sin ella.
+ */
+export type SubirImagenes = (
+  imagenes: ImagenAsignada[],
+) => Promise<Map<string, string>>;
+
+/**
+ * Una imagen del inventario junto con lo que aporta el bloque que la usa: si
+ * es foto o croquis para la librería, y su descripción.
+ */
+export interface ImagenAsignada extends ImagenExtraida {
+  tipoAsset: AssetTipo;
+  alt: string;
+}
+
+/**
+ * Las imágenes que el modelo asignó a algún bloque, sin repetir.
+ *
+ * Se descarta la referencia a un id que no está en el inventario: es el mismo
+ * criterio que usa el revisor con un `bloque_id` inexistente. Y se descarta la
+ * segunda referencia al mismo id, porque una imagen pertenece a un bloque; si
+ * el modelo la repite, gana el primer bloque en orden de lectura.
+ */
+function imagenesAsignadas(
+  bloques: BloqueExtraido[],
+  inventario: ImagenExtraida[],
+): ImagenAsignada[] {
+  const porId = new Map(inventario.map((im) => [im.id, im]));
+  const usadas = new Map<string, ImagenAsignada>();
+
+  for (const b of bloques) {
+    const ref = b.imagenRef.trim();
+    if (!ref || usadas.has(ref)) continue;
+    const im = porId.get(ref);
+    if (!im) continue;
+    usadas.set(ref, {
+      ...im,
+      // La foto de producto del header es "foto"; el resto —croquis,
+      // despieces, curvas— entra como "croquis" en la librería.
+      tipoAsset: b.tipo === "header" ? "foto" : "croquis",
+      alt: b.alt.trim(),
+    });
+  }
+
+  return [...usadas.values()];
 }
 
 export async function extraerDePdf(
   pdf: Uint8Array,
   cliente: ClienteExtraccion = clienteAnthropic(),
+  subirImagenes?: SubirImagenes,
 ): Promise<ResultadoExtraccion> {
   if (pdf.byteLength === 0) {
     throw new ErrorExtraccion("El archivo está vacío.");
@@ -490,31 +679,71 @@ export async function extraerDePdf(
     throw new ErrorExtraccion("El archivo no es un PDF.");
   }
 
+  // Las imágenes salen del PDF antes de llamar al modelo, y sin él: son
+  // objetos embebidos con su rectángulo de colocación. Si el PDF no tiene
+  // ninguna, el inventario va vacío y el flujo es el de antes.
+  let inventario: ImagenExtraida[] = [];
+  try {
+    inventario = await imagenesDePdf(pdf);
+  } catch (e) {
+    // Un PDF del que no se pueden leer las imágenes igual se transcribe: el
+    // texto es lo principal y los bloques quedan sin imagen, como antes.
+    console.warn("[extractor] no se pudieron leer las imágenes del PDF", e);
+  }
+
   const base64 = Buffer.from(pdf).toString("base64");
   const { parsed, uso } = await cliente.extraer(
     SISTEMA,
     base64,
-    "Transcribí esta ficha técnica a bloques. Respetá el orden en que se lee el PDF y no inventes ningún dato que no esté impreso.",
+    "Transcribí esta ficha técnica a bloques. Respetá el orden en que se lee el PDF y no inventes ningún dato que no esté impreso." +
+      inventarioParaModelo(inventario),
   );
 
-  const resultado = Respuesta.safeParse(parsed);
+  const resultado = Respuesta.safeParse(normalizarPresentacion(parsed));
   if (!resultado.success) {
     throw new ErrorExtraccion(
       "La respuesta del modelo no tiene la forma esperada. Se descarta la extracción completa.",
     );
   }
 
-  const bloques = aBloques(resultado.data.bloques);
+  // Sólo se suben las imágenes que el modelo asignó a un bloque. Las que
+  // quedaron sin asignar no van a la librería de la familia: se le informan a
+  // la persona más abajo. Así un falso positivo del filtro —la píldora de
+  // unidad de negocio es el caso típico— no ensucia la librería.
+  const asignadas = imagenesAsignadas(resultado.data.bloques, inventario);
+  let subidas = new Map<string, string>();
+  if (subirImagenes && asignadas.length > 0) {
+    try {
+      subidas = await subirImagenes(asignadas);
+    } catch (e) {
+      // Si la subida falla, la transcripción del texto igual sirve: los
+      // bloques quedan sin imagen y la persona la elige de la librería.
+      console.error("[extractor] falló la subida de las imágenes", e);
+    }
+  }
+
+  const bloques = aBloques(resultado.data.bloques, (ref) => subidas.get(ref));
   if (bloques.length === 0) {
     throw new ErrorExtraccion(
       "No se pudo transcribir ningún bloque del PDF. Revisá que sea una ficha técnica con texto seleccionable.",
     );
   }
 
+  // Una imagen que quedó fuera de todo bloque es contenido del PDF que no
+  // entró en la ficha, así que va a la misma lista que lo demás (§4bis regla
+  // 4): se muestra en pantalla, no se pierde en un log.
+  const sinUsar = inventario
+    .filter((im) => !subidas.has(im.id))
+    .map((im) => `${describirImagen(im)} — no se asignó a ningún bloque`);
+
   return {
     bloques,
-    omitido: resultado.data.omitido.map((o) => o.trim()).filter(Boolean),
+    omitido: [
+      ...resultado.data.omitido.map((o) => o.trim()).filter(Boolean),
+      ...sinUsar,
+    ],
     descartados: resultado.data.bloques.length - bloques.length,
+    imagenesUsadas: subidas.size,
     uso,
   };
 }

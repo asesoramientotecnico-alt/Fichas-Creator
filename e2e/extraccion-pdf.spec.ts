@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { test, expect } from "@playwright/test";
 
 /**
@@ -16,6 +17,8 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 /** La ficha de referencia del disco: un PDF real, de una hoja. */
 const PDF = "referencia/Ficha Tecnica - Disco de corte SG Steelox.pdf";
+/** El mismo PDF, en memoria, para los tests que pegan derecho al endpoint. */
+const PDF_BYTES = readFileSync(PDF);
 
 let contador = 0;
 const sufijo = () => `${Date.now().toString(36)}-${++contador}`;
@@ -110,6 +113,58 @@ test("el contenido que no entra en un bloque se informa, no se descarta en silen
   // los puede transcribir y tiene que decirlo en vez de inventarlos.
   await expect(page.getByText("No se transcribió:")).toBeVisible();
   expect(await page.locator(".aviso ul li").count()).toBeGreaterThan(0);
+});
+
+test("las imágenes del PDF se adjuntan a los bloques que las usan", async ({ page }) => {
+  test.setTimeout(180_000);
+  await entrar(page);
+  const fichaId = await fichaVacia(page);
+
+  const r = await page.request.post(`/api/fichas/${fichaId}/extraer`, {
+    multipart: { pdf: { name: "disco.pdf", mimeType: "application/pdf", buffer: PDF_BYTES } },
+    timeout: 120_000,
+  });
+  expect(r.ok()).toBe(true);
+  const datos = await r.json();
+
+  // El PDF del disco trae tres imágenes de contenido; la foto de producto es
+  // la que el modelo tiene que reconocer como la del header.
+  expect(datos.imagenesUsadas).toBeGreaterThan(0);
+  const header = datos.bloques.find((b: { tipo: string }) => b.tipo === "header");
+  expect(header.fotoAssetId).toBeTruthy();
+
+  // El asset quedó registrado, con el hash del contenido en la ruta.
+  const assets = await rest(`asset?id=eq.${header.fotoAssetId}&select=storage_path,tipo`);
+  expect(assets.length).toBe(1);
+  expect(assets[0].tipo).toBe("foto");
+  expect(assets[0].storage_path).toMatch(/\/pdf-[0-9a-f]{12}\.(png|jpg)$/);
+
+  // Cuántas imágenes asigna el modelo depende de su criterio, así que no se
+  // fija acá; que las no asignadas se informen se prueba en las unitarias.
+  expect(datos.imagenesUsadas).toBeLessThanOrEqual(3);
+});
+
+test("cargar dos veces el mismo PDF no duplica la imagen en la librería", async ({ page }) => {
+  test.setTimeout(240_000);
+  await entrar(page);
+
+  // Dos fichas distintas, el mismo PDF: es el caso de §7 — el croquis se sube
+  // una vez y las fichas de la familia lo reusan. Sin deduplicar, la librería
+  // junta una copia por ficha y queda inservible.
+  const idsAsset: string[] = [];
+  for (let i = 0; i < 2; i++) {
+    const fichaId = await fichaVacia(page);
+    const r = await page.request.post(`/api/fichas/${fichaId}/extraer`, {
+      multipart: { pdf: { name: "disco.pdf", mimeType: "application/pdf", buffer: PDF_BYTES } },
+      timeout: 120_000,
+    });
+    expect(r.ok()).toBe(true);
+    const datos = await r.json();
+    const header = datos.bloques.find((b: { tipo: string }) => b.tipo === "header");
+    idsAsset.push(header.fotoAssetId);
+  }
+
+  expect(idsAsset[0]).toBe(idsAsset[1]);
 });
 
 test("un archivo que no es PDF se rechaza con un mensaje claro", async ({ page }) => {

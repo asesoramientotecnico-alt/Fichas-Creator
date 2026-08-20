@@ -58,7 +58,7 @@ export default async function FichaPage({ params }: { params: Promise<{ id: stri
   const actual = revisiones?.[0];
   const bloques = comoBloques(actual?.bloques);
   // Los bloques con imagen apuntan a un asset de la familia por id (§7).
-  const assets = await assetsDeFamilia(ficha.producto?.familia_id ?? null);
+  const assets = await assetsDeFamilia(ficha.producto?.familia_id ?? null, bloques);
   // Familia y píldora de unidad de negocio salen del bloque header, no del
   // producto (ver unidades-negocio.ts).
   const cabecera = datosDeCabecera(bloques, assets.mapa);

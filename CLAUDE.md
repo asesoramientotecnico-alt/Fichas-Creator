@@ -35,8 +35,10 @@ Tres requisitos que definen el producto:
 - Extracción de tablas dimensionales desde PDFs de **normas** (una norma es un documento de decenas
   de páginas con tablas que no son la ficha; transcribir un borrador de ficha de una o tres páginas,
   que sí está en alcance, es otro problema — ver §4bis).
-- Extracción de las imágenes del PDF. Se transcribe el texto y se deja el bloque de imagen apuntando
-  a nada, con su descripción; la imagen se elige de la librería de la familia (§7).
+- Rasterizado de dibujos vectoriales de un PDF. Medido sobre la plantilla V26 y sobre la ficha del
+  disco Steelox, los vectores de una ficha son el fondo de la hoja, las bandas, las reglas y los
+  marcos de las figuras — cromo del layout. Las fotos, croquis, despieces y curvas vienen como
+  bitmap y sí se extraen (§4bis regla 5). Si algún día aparece un croquis vectorial, se sube a mano.
 - Integración con SAP.
 
 > **Cambio de alcance, agosto 2026.** "Extracción desde PDF" estaba fuera de alcance completo. El
@@ -154,9 +156,26 @@ borradores que Oficina Técnica arma en Word o InDesign antes de cargarlos.
 4. **Lo que no entra en un bloque se informa.** Pictogramas, sellos, iconos sin texto: van a una
    lista "no se transcribió" que se le muestra a la persona. No se fuerzan dentro de un bloque ni se
    descartan en silencio.
-5. **Las imágenes no se extraen.** El modelo no sube archivos. Los bloques con imagen salen sin
-   `assetId` y con un `alt` que describe qué imagen va ahí; la persona la elige de la librería de la
-   familia (§7).
+5. **Las imágenes se extraen, pero no las extrae el modelo.** Las saca `src/lib/pdf/imagenes.ts`
+   del PDF, sin IA: los rectángulos salen del texto estructurado y cada región se **renderiza sobre
+   blanco**, no se copia del objeto embebido. La diferencia no es cosmética: la foto del disco
+   Steelox tiene su transparencia en una máscara suave aparte, y el objeto embebido por sí solo es
+   la foto sobre negro. Renderizando la región, MuPDF compone la máscara y lo que haya encima, y
+   sale lo que se ve en el PDF; de paso entran los rótulos que son parte de la figura sin ser parte
+   del bitmap, como las leyendas de la escala de dureza.
+   El modelo recibe un inventario —`imagen1`, `imagen2`…, con hoja y posición— y su única decisión
+   es a qué bloque pertenece cada una. Elige de una lista cerrada: una referencia que no está en el
+   inventario se descarta, igual que un `bloque_id` inexistente en el revisor. Así no puede inventar
+   una imagen ni recortar mal una cota.
+
+   Sólo se sube lo que quedó asignado a un bloque, y deduplicado por hash del contenido: §7 dice que
+   un croquis se sube una vez y todas las fichas de la familia lo reusan, y sin deduplicar cada
+   ficha cargada desde su PDF metería su propia copia. Una imagen del inventario que el modelo no
+   usó va a la lista "no se transcribió" (regla 4) en vez de ensuciar la librería — es lo que pasa
+   con la píldora de unidad de negocio, que sale del catálogo fijo y no de la ficha.
+
+   Un bloque sin imagen asignada queda como antes: sin `assetId` y con su `alt` describiendo qué
+   imagen va, para que la persona la elija de la librería.
 
 ### Implementación
 
@@ -164,11 +183,30 @@ borradores que Oficina Técnica arma en Word o InDesign antes de cargarlos.
   catorce tipos transcribibles, no una unión discriminada: con la unión, la API rechaza el pedido
   porque la gramática compilada de los structured outputs se vuelve demasiado grande. El modelo llena
   los campos que aplican y `aBloques` los traduce al bloque real, descartando lo que venga vacío.
-- `POST /api/fichas/[id]/extraer` — recibe el PDF, devuelve bloques. No escribe en la base.
+- `src/lib/pdf/imagenes.ts` — extracción de las imágenes y filtro de cromo. Determinístico, sin IA.
+  El filtro descarta por cuatro señales geométricas: área de colocación menor al 0,6% de la hoja,
+  lado mayor menor a 120 px, relación de aspecto mayor a 8:1, y repetición en todas las hojas (que
+  es el logo). Calibrado sobre las dos fichas de `referencia/`: en la del disco, las tres figuras
+  reales ocupan 11,8%, 3,1% y 1,0% de la hoja y los ocho pictogramas 0,16% o menos. El recorte se
+  renderiza a la resolución del bitmap de origen, acotada entre 150 y 300 DPI, y se guarda en PNG o
+  JPEG según cuál pese menos — una foto gana en JPEG, un dibujo de líneas gana en PNG y además sale
+  sin ringing. El hash de deduplicación es del objeto embebido, no del recorte: identifica la imagen
+  sin depender de dónde esté colocada. `mupdf` se importa de forma diferida: usa top-level await y
+  arrastra 10 MB de WASM.
+- La respuesta del modelo pasa por `normalizarPresentacion` antes de validarse. Corrige **sólo**
+  campos que no llevan datos del producto —`ancho`, `orientacion`, `marco`, la alineación de una
+  columna— con un valor por omisión fijo. Existe por un caso real: el modelo devolvió `orientacion`
+  fuera del enum en los ocho bloques de una ficha y se descartaba la transcripción completa. Un
+  campo de contenido nunca se completa ni se adivina; para eso está la regla 2.
+- `src/lib/pdf/subir-imagenes.ts` — sube a la librería de la familia lo asignado. El hash del
+  contenido va en el nombre del archivo y es la clave de deduplicación.
+- `POST /api/fichas/[id]/extraer` — recibe el PDF, devuelve bloques. No toca `ficha_revision`; lo
+  único que escribe son los assets de las imágenes asignadas.
 - `chart` queda afuera: sus series son datos numéricos y el SVG lo dibuja el servidor (§7).
 
-Modelo: `ANTHROPIC_MODELO_EXTRACCION`, y si no está, el mismo del revisor. Medido con Haiku sobre una
-ficha de una hoja: ~30 s y ~5.500 tokens de entrada.
+Modelo: `ANTHROPIC_MODELO_EXTRACCION`, y si no está, el mismo del revisor. Medido con Haiku: la ficha
+del disco (una hoja, 3 imágenes) ~35 s y ~6.100 tokens de entrada; la plantilla V26 (tres hojas, 5
+imágenes) ~37 s y ~10.700. El tamaño del PDF pesa menos que la cantidad de bloques a emitir.
 
 ---
 
@@ -302,4 +340,9 @@ familia. Bloque `chart`.
 | Sobre-ingeniería del modelo de datos | Este documento ya recortó el alcance respecto de diseños previos. No reintroducir extracción de normas ni schemas por familia |
 | La transcripción del PDF mete un dato que el PDF no dice | §4bis reglas 2 y 3. La transcripción no se guarda: queda en el editor para revisar. `scripts/extractor.test.ts` cubre el descarte de bloques vacíos |
 | Se confía en la transcripción y nadie la revisa | El estado nace `borrador`, así que el PDF sale con marca de agua hasta que alguien lo apruebe (§5 invariante 4). Lo no transcripto se muestra en pantalla, no en un log |
-| La extracción de una ficha de tres hojas no entra en los 60 s de Vercel Hobby | Medido: una hoja ~30 s. Si pasa, partir el PDF o mover la extracción a un trabajo asincrónico — no subir `maxDuration` a ciegas |
+| La extracción de una ficha de tres hojas no entra en los 60 s de Vercel Hobby | Medido: una hoja ~35 s, tres hojas ~37 s. Entra, pero con poco margen. Si una ficha lo pasa, partir el PDF o mover la extracción a un trabajo asincrónico — no subir `maxDuration` a ciegas |
+| El filtro de imágenes deja pasar cromo (un logo, una píldora) y ensucia la librería de la familia | Sólo se sube lo que el modelo asigna a un bloque. Lo que sobrevive al filtro y no se usa se informa en pantalla. `scripts/imagenes-pdf.test.ts` fija el filtro contra las dos fichas de `referencia/` |
+| La misma imagen se sube una vez por ficha y la librería de §7 queda inservible | Deduplicación por hash del contenido en el nombre del archivo. Un E2E carga el mismo PDF en dos fichas y verifica que el assetId es el mismo |
+| El modelo asigna una imagen al bloque equivocado | Elige de un inventario cerrado, así que el error posible es de emparejamiento, no de invención: la imagen existe y está en la ficha, sólo en el bloque de al lado. Se ve en el preview y se cambia con el selector de assets del editor |
+| El recorte de una figura arrastra texto vecino que cae dentro de su rectángulo | Es el comportamiento buscado: los rótulos de la escala de dureza son parte de la figura y no del bitmap. El riesgo es un rectángulo que se solape con texto ajeno; se ve en el preview y el bloque se puede dejar sin imagen |
+| Un bloque apunta a un asset que la librería de su familia no cubre y queda un hueco | `assetsDeFamilia` recibe los bloques y resuelve además todo asset referenciado, sea de otra familia o de ninguna. Pasa con las imágenes de un PDF cuando el producto todavía no tiene familia |

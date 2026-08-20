@@ -1,8 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // El bundle de Chromium no debe pasar por webpack.
-  serverExternalPackages: ["puppeteer-core", "@sparticuz/chromium"],
+  // El bundle de Chromium no debe pasar por webpack. mupdf tampoco: es WASM,
+  // y si webpack lo procesa el .wasm no queda junto al módulo que lo carga.
+  serverExternalPackages: ["puppeteer-core", "@sparticuz/chromium", "mupdf"],
 
   // El generador de PDF lee estos archivos del disco en tiempo de ejecución
   // (ver src/lib/pdf/recursos.ts). Sin declararlos, el file tracing de Next

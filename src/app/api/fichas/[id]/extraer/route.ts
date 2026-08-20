@@ -1,14 +1,21 @@
 import { NextResponse } from "next/server";
 import { crearClienteServidor } from "@/lib/supabase/cliente-servidor";
 import { extraerDePdf, ErrorExtraccion } from "@/lib/ia/extractor";
+import { subirImagenesExtraidas } from "@/lib/pdf/subir-imagenes";
 
 /**
  * "Cargar desde PDF": transcribe un PDF de ficha ya maquetado a bloques.
  *
- * NO guarda nada. Devuelve los bloques para que el editor los cargue como
- * borrador, y la persona revise antes de crear la revisión. Así
- * `ficha_revision` sigue teniendo sólo cambios que alguien aprobó (§1
- * requisito 2): la extracción ahorra tipeo, no reemplaza la revisión humana.
+ * NO toca `ficha_revision`. Devuelve los bloques para que el editor los cargue
+ * como borrador, y la persona revise antes de crear la revisión. Así el
+ * historial sigue teniendo sólo cambios que alguien aprobó (§1 requisito 2):
+ * la extracción ahorra tipeo, no reemplaza la revisión humana.
+ *
+ * Lo único que sí escribe son las imágenes que el modelo asignó a un bloque:
+ * van a la librería de assets de la familia (§7), deduplicadas por contenido.
+ * Es una librería, aditiva por naturaleza, y un asset de más se ve y se borra
+ * desde la pantalla de familias — muy distinto de un dato que entra al
+ * historial sin que nadie lo haya aprobado.
  */
 export const runtime = "nodejs";
 // 60 s es el techo del plan Hobby de Vercel. Medido con Haiku sobre una ficha
@@ -41,9 +48,10 @@ export async function POST(
   // una llamada al modelo para nada.
   const { data: ficha } = await supabase
     .from("ficha")
-    .select("id")
+    .select("id, producto:producto_id (familia_id)")
     .eq("id", id)
-    .maybeSingle();
+    .maybeSingle()
+    .overrideTypes<{ id: string; producto: { familia_id: string | null } | null }>();
 
   if (!ficha) {
     return NextResponse.json({ error: "No encontramos la ficha." }, { status: 404 });
@@ -66,7 +74,13 @@ export async function POST(
 
   try {
     const bytes = new Uint8Array(await archivo.arrayBuffer());
-    const { bloques, omitido, descartados, uso } = await extraerDePdf(bytes);
+    const familiaId = ficha.producto?.familia_id ?? null;
+
+    const { bloques, omitido, descartados, imagenesUsadas, uso } = await extraerDePdf(
+      bytes,
+      undefined,
+      (imagenes) => subirImagenesExtraidas(supabase, familiaId, imagenes),
+    );
 
     if (descartados > 0) {
       // No se le muestran: son bloques que el modelo devolvió sin contenido.
@@ -74,7 +88,15 @@ export async function POST(
       console.warn(`[extractor] ${descartados} bloques descartados por venir vacíos`);
     }
 
-    return NextResponse.json({ bloques, omitido, uso });
+    // Sin familia las imágenes se suben igual —el bloque tiene que poder
+    // mostrarlas— pero no aparecen en ninguna librería para reusar. Se avisa,
+    // porque la salida es asignarle una familia al producto.
+    const aviso =
+      imagenesUsadas > 0 && !familiaId
+        ? "El producto no tiene familia asignada, así que las imágenes no quedaron en ninguna librería para reusar."
+        : undefined;
+
+    return NextResponse.json({ bloques, omitido, imagenesUsadas, aviso, uso });
   } catch (e) {
     if (e instanceof ErrorExtraccion) {
       return NextResponse.json({ error: e.message }, { status: 422 });

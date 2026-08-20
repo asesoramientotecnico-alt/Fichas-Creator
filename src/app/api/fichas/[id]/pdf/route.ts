@@ -73,7 +73,7 @@ export async function GET(
 
   // Las imágenes salen de la librería de la familia (§7); el generador las
   // embebe como data URI para no depender de la URL firmada.
-  const assets = await assetsDeFamilia(ficha.producto?.familia_id ?? null);
+  const assets = await assetsDeFamilia(ficha.producto?.familia_id ?? null, bloques);
   // Familia y píldora de unidad de negocio salen del bloque header, no del
   // producto (ver unidades-negocio.ts).
   const cabecera = datosDeCabecera(bloques, assets.mapa);
