@@ -1,53 +1,305 @@
 /* Chrome del editor. No toca la estética de la ficha. */
 
-.editor {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  gap: var(--space-6);
-  align-items: start;
-}
+/* ---------------------------------------------------------------
+   Taller: paleta y orden | lienzo | inspector
+   --------------------------------------------------------------- */
 
-@media (max-width: 1100px) {
-  .editor { grid-template-columns: minmax(0, 1fr); }
-}
-
-.editor-lista {
+.taller {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
-.bloque-editor {
-  background: var(--bg-1);
-  border: 1px solid var(--border-1);
-  border-left: 3px solid var(--famiq-grey-300);
-}
-
-.bloque-editor[data-nuevo="true"] { border-left-color: var(--famiq-green); }
-
-.bloque-editor > header {
+.taller-barra {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--border-1);
-  background: var(--bg-2);
+  flex-wrap: wrap;
 }
 
-.bloque-editor > header .tipo {
+.taller-barra-izq {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.taller-conteo {
+  font-size: var(--fs-micro);
+  color: var(--fg-3);
+}
+
+.taller-paneles {
+  display: grid;
+  /* El lienzo manda: los laterales tienen ancho fijo y la hoja se queda con lo
+     que sobra. `minmax(0, 1fr)` es lo que impide que la hoja, que mide 210mm,
+     empuje la grilla y se derrame sobre el panel derecho. */
+  grid-template-columns: 300px minmax(0, 1fr) 340px;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.taller-izq,
+.taller-der {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  position: sticky;
+  top: var(--space-3);
+  /* Los paneles hacen su propio scroll. Sin esto, uno más alto que la ventana
+     se derrama y el lienzo le pinta encima. */
+  max-height: calc(100vh - var(--space-6));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.taller-izq > *,
+.taller-der > * {
+  background: var(--bg-1);
+  border: 1px solid var(--border-1);
+  padding: var(--space-4);
+}
+
+@media (max-width: 1400px) {
+  .taller-paneles { grid-template-columns: 260px minmax(0, 1fr) 300px; }
+}
+
+@media (max-width: 1100px) {
+  .taller-paneles { grid-template-columns: minmax(0, 1fr); }
+  .taller-izq,
+  .taller-der { position: static; max-height: none; overflow: visible; }
+}
+
+/* ---------------------------------------------------------------
+   Lienzo
+   --------------------------------------------------------------- */
+
+.lienzo {
+  position: relative;
+  background: var(--famiq-grey-200);
+  padding: var(--space-4);
+  /* La hoja mide 210mm: en una pantalla angosta se scrollea acá adentro, no se
+     derrama sobre los paneles. */
+  overflow: auto;
+  max-height: calc(100vh - var(--space-6));
+  min-height: 24rem;
+}
+
+.lienzo-hoja {
+  position: relative;
+  /* La hoja se centra mientras entre, y se alinea a la izquierda cuando hay que
+     scrollear, para que no se corte por los dos lados. */
+  width: fit-content;
+  margin-inline: auto;
+}
+
+/* La ficha no cambia; sólo se le da al cursor la pista de que se puede elegir. */
+.lienzo .bloque { cursor: pointer; }
+
+.lienzo .bloque:hover {
+  outline: 1px dashed var(--famiq-grey-400);
+  outline-offset: 2px;
+}
+
+/* Destino de un arrastre: la barra marca antes de qué bloque va a caer. */
+.marca-destino {
+  position: absolute;
+  pointer-events: none;
+  background: var(--famiq-green);
+  z-index: 3;
+  border-radius: 2px;
+}
+
+.marca-destino[data-modo="antes"] { width: 3px; }
+.marca-destino[data-modo="asset"] {
+  background: none;
+  outline: 2px dashed var(--famiq-green);
+  outline-offset: 2px;
+}
+
+.marco-seleccion {
+  position: absolute;
+  pointer-events: none;
+  outline: 2px solid var(--famiq-red);
+  outline-offset: 2px;
+  z-index: 2;
+}
+
+.marco-rotulo {
+  position: absolute;
+  top: -1.35rem;
+  left: 0;
+  background: var(--famiq-red);
+  color: #fff;
+  font-family: var(--font-condensed);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  padding: 1px var(--space-2);
+  white-space: nowrap;
+}
+
+.marco-asa-ancho {
+  position: absolute;
+  pointer-events: auto;
+  top: 50%;
+  right: -7px;
+  width: 12px;
+  height: 34px;
+  transform: translateY(-50%);
+  background: var(--famiq-red);
+  border-radius: 6px;
+  cursor: ew-resize;
+}
+
+/* ---------------------------------------------------------------
+   Panel izquierdo: orden y paleta
+   --------------------------------------------------------------- */
+
+.orden h3,
+.paleta-grupo h3,
+.libreria h4,
+.taller-guardar h3,
+.inspector-cabecera h3 {
   font-family: var(--font-condensed);
   font-weight: var(--weight-bold);
   font-size: var(--fs-micro);
   text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
-  color: var(--fg-2);
+  letter-spacing: var(--tracking-eyebrow);
+  color: var(--famiq-red);
+  margin: 0 0 var(--space-2);
 }
 
-.bloque-editor > .cuerpo {
-  padding: var(--space-4);
+.inspector-cabecera h3 { color: var(--fg-1); font-size: var(--fs-h4); text-transform: none; letter-spacing: normal; }
+
+.paleta-vacia {
+  font-size: var(--fs-micro);
+  color: var(--fg-3);
+  margin: 0;
+}
+
+.orden-lista { display: flex; flex-direction: column; }
+
+.orden-item {
   display: grid;
+  grid-template-columns: 14px 1.4rem minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  text-align: left;
+  background: var(--bg-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-1);
+  padding: var(--space-2);
+  cursor: grab;
+  font-size: var(--fs-small);
+}
+
+.orden-item:hover { border-color: var(--famiq-grey-400); }
+.orden-item[data-seleccionado="true"] { border-color: var(--famiq-red); background: var(--famiq-red-tenue); }
+.orden-item[data-nuevo="true"] .orden-numero { color: var(--famiq-green); font-weight: var(--weight-bold); }
+
+.orden-asa { color: var(--fg-3); cursor: grab; }
+.orden-numero { color: var(--fg-3); font-variant-numeric: tabular-nums; font-size: var(--fs-micro); }
+.orden-nombre { min-width: 0; }
+.orden-rotulo { color: var(--fg-3); }
+
+/* Franja entre dos ítems donde cae lo que se arrastra. */
+.orden-hueco { height: var(--space-2); border-radius: 2px; }
+.orden-hueco[data-activo="true"] { background: var(--famiq-red); height: 3px; margin: calc(var(--space-2) / 2) 0; }
+
+.paleta { display: flex; flex-direction: column; gap: var(--space-3); }
+.paleta-grupo { display: flex; flex-direction: column; gap: var(--space-2); }
+.tipo-opcion { cursor: grab; }
+
+/* ---------------------------------------------------------------
+   Inspector
+   --------------------------------------------------------------- */
+
+.inspector { display: grid; gap: var(--space-3); }
+
+.inspector-cabecera {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
   gap: var(--space-3);
+}
+
+.marca-nuevo {
+  display: inline-block;
+  margin-left: var(--space-2);
+  font-family: var(--font-condensed);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--famiq-green);
+  vertical-align: middle;
+}
+
+.anchos { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
+
+.ancho-opcion {
+  display: grid;
+  gap: 3px;
+  justify-items: center;
+  background: var(--bg-1);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-1);
+  padding: var(--space-2) 2px;
+  cursor: pointer;
+  font-size: 10px;
+  color: var(--fg-3);
+}
+.ancho-opcion:hover { border-color: var(--famiq-grey-400); }
+.ancho-opcion[data-activo="true"] { border-color: var(--famiq-red); color: var(--fg-1); }
+
+/* Cada opción dibuja la fracción de la grilla que representa. */
+.ancho-barra { display: block; height: 6px; background: var(--famiq-grey-300); width: 100%; }
+.ancho-opcion[data-activo="true"] .ancho-barra { background: var(--famiq-red); }
+.ancho-barra[data-ancho="un-tercio"] { width: 33%; }
+.ancho-barra[data-ancho="medio"] { width: 50%; }
+.ancho-barra[data-ancho="dos-tercios"] { width: 66%; }
+.ancho-barra[data-ancho="completo"] { width: 100%; }
+.ancho-nombre { text-align: center; line-height: 1.15; }
+
+.libreria { display: grid; gap: var(--space-2); }
+.libreria-grilla { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+
+.libreria-item {
+  margin: 0;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-1);
+  padding: 2px;
+  cursor: grab;
+  background: #fff;
+}
+.libreria-item:hover { border-color: var(--famiq-red); }
+.libreria-item img { display: block; width: 100%; height: 3.2rem; object-fit: contain; }
+.libreria-item figcaption {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--fg-3);
+  text-align: center;
+}
+
+.taller-guardar { display: grid; gap: var(--space-3); }
+
+.lista-cambios {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: var(--fs-micro);
+}
+
+.enlace-aviso {
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  color: var(--fg-link);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
 }
 
 .acciones-bloque { display: flex; gap: var(--space-1); }
@@ -101,26 +353,6 @@
   border-left: 2px solid var(--border-1);
 }
 
-.editor-panel {
-  position: sticky;
-  top: var(--space-4);
-  background: var(--bg-1);
-  border: 1px solid var(--border-1);
-  padding: var(--space-4);
-  display: grid;
-  gap: var(--space-4);
-}
-
-.editor-panel h2 {
-  font-family: var(--font-condensed);
-  font-weight: var(--weight-bold);
-  font-size: var(--fs-micro);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-eyebrow);
-  color: var(--famiq-red);
-  margin: 0;
-}
-
 .tipo-opcion {
   text-align: left;
   border: 1px solid var(--border-2);
@@ -143,3 +375,30 @@
 }
 
 textarea { resize: vertical; min-height: 4.5em; }
+
+/* Barra de zoom del lienzo. Queda pegada arriba mientras se scrollea la hoja. */
+.lienzo-zoom-barra {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  font-size: var(--fs-micro);
+  color: var(--fg-3);
+}
+
+.zoom-opcion {
+  border: 1px solid var(--border-2);
+  background: var(--bg-1);
+  border-radius: var(--radius-1);
+  padding: 1px var(--space-2);
+  font-size: var(--fs-micro);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.zoom-opcion:hover { border-color: var(--famiq-grey-400); }
+.zoom-opcion[data-activo="true"] { border-color: var(--famiq-red); color: var(--famiq-red); }
+
+.lienzo-zoom { width: fit-content; }

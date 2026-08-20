@@ -2,13 +2,23 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { AnchoBloque, Bloque } from "@/lib/tipos";
-import { anchoDe } from "@/lib/paginado";
-import { TIPOS_DISPONIBLES, bloqueVacio } from "@/lib/bloques-nuevos";
+import type { AnchoBloque, Bloque, TipoBloque } from "@/lib/tipos";
+import { TIPOS_DISPONIBLES, bloqueVacio, nuevoId } from "@/lib/bloques-nuevos";
 import { guardarRevision } from "@/app/acciones-ficha";
 import { compararRevisiones, ETIQUETA_CLASE } from "@/lib/diff";
-import CamposBloque from "./CamposBloque";
-import FichaPaginada from "@/components/ficha/FichaPaginada";
+import { revisarBloques } from "@/lib/validacion";
+import {
+  conAsset,
+  insertarAntesDe as insertarAntesDeEn,
+  insertarEn as insertarEnLista,
+  moverA as moverAEn,
+  moverAntesDe as moverAntesDeEn,
+} from "@/lib/orden-bloques";
+import { useRetardado } from "@/lib/usar-retardado";
+import Lienzo from "./Lienzo";
+import PaletaBloques from "./PaletaBloques";
+import ListaOrden from "./ListaOrden";
+import Inspector from "./Inspector";
 import type { DatosFicha } from "@/components/ficha/FichaVista";
 import type { AssetDisponible } from "@/app/acciones-assets";
 import { datosDeCabecera } from "@/lib/ficha-textos";
@@ -16,13 +26,19 @@ import "./editor.css";
 
 const NOMBRE_TIPO = new Map(TIPOS_DISPONIBLES.map((t) => [t.tipo, t.nombre]));
 
-const ANCHOS: { valor: AnchoBloque; nombre: string }[] = [
-  { valor: "completo", nombre: "Ancho completo" },
-  { valor: "dos-tercios", nombre: "Dos tercios" },
-  { valor: "medio", nombre: "Media hoja" },
-  { valor: "un-tercio", nombre: "Un tercio" },
-];
-
+/**
+ * Editor de una ficha, en tres paneles: los bloques y la paleta a la izquierda,
+ * la hoja al centro como lienzo, y los campos del bloque elegido a la derecha.
+ *
+ * Antes era un formulario largo con la vista previa abajo: se editaba a ciegas y
+ * había que scrollear para ver el efecto, reordenar era subir y bajar de a un
+ * paso, y el ancho se elegía de un desplegable sin ver a qué correspondía. Acá
+ * la hoja es el lugar donde se trabaja.
+ *
+ * Lo que se puede hacer sigue acotado por §4: elegir entre los tipos que
+ * existen y entre las cuatro fracciones de la grilla. Arrastrar es una forma más
+ * directa de decir lo mismo, no una libertad nueva.
+ */
 export default function Editor({
   fichaId,
   bloquesIniciales,
@@ -42,38 +58,95 @@ export default function Editor({
 }) {
   const router = useRouter();
   const [bloques, setBloques] = useState<Bloque[]>(bloquesIniciales);
+  const [seleccionado, setSeleccionado] = useState<string | null>(
+    bloquesIniciales[0]?.id ?? null,
+  );
   const [comentario, setComentario] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [guardando, iniciarGuardado] = useTransition();
-  const [verPrevia, setVerPrevia] = useState(false);
   const [extrayendo, setExtrayendo] = useState(false);
   const [omitido, setOmitido] = useState<string[]>([]);
   const [resumenExtraccion, setResumenExtraccion] = useState<string | null>(null);
   const archivoPdf = useRef<HTMLInputElement>(null);
 
-  // El diff contra la revisión cargada muestra en vivo qué se va a registrar.
+  // El lienzo repagina midiendo el DOM, así que encadenarlo a cada tecla hacía
+  // sentir trabado al editor. Con el retardo, tipear es inmediato.
+  const bloquesParaLienzo = useRetardado(bloques, 250);
+
   const diff = useMemo(
     () => compararRevisiones(bloquesIniciales, bloques),
     [bloquesIniciales, bloques],
   );
+
+  const avisos = useMemo(() => revisarBloques(bloques), [bloques]);
 
   const idsIniciales = useMemo(
     () => new Set(bloquesIniciales.map((b) => b.id)),
     [bloquesIniciales],
   );
 
-  // La familia y la píldora de unidad de negocio se editan en el bloque
-  // header: la vista previa las tiene que seguir en vivo, no sólo mostrar la
-  // que trajo el servidor al abrir el editor.
+  // La familia y la píldora de unidad de negocio se editan en el bloque header:
+  // el lienzo las tiene que seguir en vivo, no sólo mostrar la que trajo el
+  // servidor al abrir el editor.
   const datosPrevia = useMemo(() => {
-    const cabecera = datosDeCabecera(bloques, assets ?? {});
+    const cabecera = datosDeCabecera(bloquesParaLienzo, assets ?? {});
     return {
       ...datosFicha,
       familia: cabecera.familia || datosFicha.familia,
       pildoraSrc: cabecera.pildoraSrc ?? datosFicha.pildoraSrc,
       pildoraAlt: cabecera.pildoraAlt ?? datosFicha.pildoraAlt,
     };
-  }, [bloques, assets, datosFicha]);
+  }, [bloquesParaLienzo, assets, datosFicha]);
+
+  // ---------------------------------------------------------------
+  // Operaciones sobre el array de bloques
+  // ---------------------------------------------------------------
+
+  const moverAntesDe = (id: string, antesDe: string | null) =>
+    setBloques((previos) => moverAntesDeEn(previos, id, antesDe));
+
+  const moverA = (id: string, destino: number) =>
+    setBloques((previos) => moverAEn(previos, id, destino));
+
+  const insertarEn = (tipo: TipoBloque, indice: number) => {
+    const bloque = bloqueVacio(tipo);
+    setBloques((previos) => insertarEnLista(previos, bloque, indice));
+    setSeleccionado(bloque.id);
+  };
+
+  const insertarAntesDe = (tipo: TipoBloque, antesDe: string | null) => {
+    const bloque = bloqueVacio(tipo);
+    setBloques((previos) => insertarAntesDeEn(previos, bloque, antesDe));
+    setSeleccionado(bloque.id);
+  };
+
+  const cambiarAncho = (id: string, ancho: AnchoBloque) =>
+    setBloques((previos) => previos.map((b) => (b.id === id ? { ...b, ancho } : b)));
+
+  const asignarAsset = (id: string, assetId: string) =>
+    setBloques((previos) => conAsset(previos, id, assetId));
+
+  const duplicar = (id: string) => {
+    const original = bloques.find((b) => b.id === id);
+    if (!original) return;
+    const copia = { ...original, id: nuevoId(original.tipo) } as Bloque;
+    setBloques((previos) => {
+      const i = previos.findIndex((b) => b.id === id);
+      const siguiente = [...previos];
+      siguiente.splice(i + 1, 0, copia);
+      return siguiente;
+    });
+    setSeleccionado(copia.id);
+  };
+
+  const eliminar = (id: string) => {
+    setBloques((previos) => previos.filter((b) => b.id !== id));
+    setSeleccionado((previo) => (previo === id ? null : previo));
+  };
+
+  // ---------------------------------------------------------------
+  // Cargar desde PDF
+  // ---------------------------------------------------------------
 
   /**
    * Transcribe un PDF a bloques y los carga en el editor SIN guardar: el
@@ -107,6 +180,7 @@ export default function Editor({
       }
       const nuevos = datos.bloques as Bloque[];
       setBloques(nuevos);
+      setSeleccionado(nuevos[0]?.id ?? null);
       setOmitido((datos.omitido ?? []) as string[]);
 
       const imagenes = (datos.imagenesUsadas ?? 0) as number;
@@ -130,14 +204,6 @@ export default function Editor({
     }
   };
 
-  const mover = (indice: number, delta: number) => {
-    const destino = indice + delta;
-    if (destino < 0 || destino >= bloques.length) return;
-    const copia = [...bloques];
-    [copia[indice], copia[destino]] = [copia[destino], copia[indice]];
-    setBloques(copia);
-  };
-
   const guardar = () => {
     setError(null);
     iniciarGuardado(async () => {
@@ -151,76 +217,12 @@ export default function Editor({
     });
   };
 
+  const seleccion = seleccionado ? (bloques.find((b) => b.id === seleccionado) ?? null) : null;
+
   return (
-    <div className="editor">
-      <div className="editor-lista">
-        {bloques.length === 0 ? (
-          <p className="vacio">La ficha no tiene bloques. Agregá el primero desde el panel.</p>
-        ) : null}
-
-        {bloques.map((bloque, i) => (
-          <article
-            className="bloque-editor"
-            key={bloque.id}
-            data-nuevo={!idsIniciales.has(bloque.id)}
-          >
-            <header>
-              <span className="tipo">
-                {NOMBRE_TIPO.get(bloque.tipo) ?? bloque.tipo}
-                {!idsIniciales.has(bloque.id) ? " · nuevo" : ""}
-              </span>
-              <div className="acciones-bloque">
-                <button type="button" className="icono" title="Subir" aria-label="Subir"
-                  disabled={i === 0} onClick={() => mover(i, -1)}>↑</button>
-                <button type="button" className="icono" title="Bajar" aria-label="Bajar"
-                  disabled={i === bloques.length - 1} onClick={() => mover(i, 1)}>↓</button>
-                <button type="button" className="icono" data-peligro="true" title="Eliminar bloque"
-                  aria-label="Eliminar bloque"
-                  onClick={() => setBloques(bloques.filter((_, j) => j !== i))}>×</button>
-              </div>
-            </header>
-            <div className="cuerpo">
-              {/* El ancho es lo único de la maqueta que el usuario decide, y
-                  sólo entre las cuatro fracciones de la grilla de 12 pistas.
-                  Cualquier otro valor rompería la alineación de columnas. */}
-              <div className="campo">
-                <label htmlFor={`ancho-${bloque.id}`}>Ancho en la hoja</label>
-                <select
-                  id={`ancho-${bloque.id}`}
-                  value={anchoDe(bloque)}
-                  onChange={(e) =>
-                    setBloques(
-                      bloques.map((b, j) =>
-                        j === i ? { ...b, ancho: e.target.value as AnchoBloque } : b,
-                      ),
-                    )
-                  }
-                >
-                  {ANCHOS.map((a) => (
-                    <option key={a.valor} value={a.valor}>
-                      {a.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <CamposBloque
-                bloque={bloque}
-                assetsDisponibles={assetsDisponibles}
-                onChange={(nuevo) => setBloques(bloques.map((b, j) => (j === i ? nuevo : b)))}
-              />
-            </div>
-          </article>
-        ))}
-      </div>
-
-      <aside className="editor-panel">
-        <div>
-          <h2>Cargar desde PDF</h2>
-          <p style={{ fontSize: "var(--fs-micro)", color: "var(--fg-3)", margin: "var(--space-2) 0" }}>
-            Transcribe un PDF de ficha a bloques y le adjunta las imágenes que
-            encuentra. No crea ninguna revisión: el resultado queda en pantalla
-            para que lo revises antes de guardar.
-          </p>
+    <div className="taller">
+      <div className="taller-barra">
+        <div className="taller-barra-izq">
           <input
             ref={archivoPdf}
             id="pdf-origen"
@@ -239,97 +241,127 @@ export default function Editor({
             disabled={extrayendo || guardando}
             onClick={() => archivoPdf.current?.click()}
           >
-            {extrayendo ? "Leyendo el PDF…" : "Elegir PDF…"}
+            {extrayendo ? "Leyendo el PDF…" : "Cargar desde PDF"}
           </button>
-          {resumenExtraccion ? (
-            <p
-              style={{
-                fontSize: "var(--fs-micro)",
-                color: "var(--fg-2)",
-                margin: "var(--space-3) 0 0",
-              }}
-            >
-              {resumenExtraccion}
-            </p>
-          ) : null}
-          {omitido.length > 0 ? (
-            <div className="aviso" style={{ marginTop: "var(--space-3)" }}>
-              <strong>No se transcribió:</strong>
-              <ul style={{ margin: "var(--space-2) 0 0", paddingLeft: "1.1rem" }}>
-                {omitido.map((o, i) => (
-                  <li key={i}>{o}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
+          <span className="taller-conteo">
+            {bloques.length} bloque{bloques.length === 1 ? "" : "s"}
+            {diff.hayCambios ? " · con cambios sin guardar" : ""}
+          </span>
         </div>
+        <button
+          className="boton"
+          type="button"
+          onClick={guardar}
+          disabled={guardando || !diff.hayCambios}
+        >
+          {guardando ? "Guardando…" : "Guardar revisión"}
+        </button>
+      </div>
 
-        <div>
-          <h2>Agregar bloque</h2>
-          <div style={{ display: "grid", gap: "var(--space-2)", marginTop: "var(--space-3)" }}>
-            {TIPOS_DISPONIBLES.map((t) => (
-              <button key={t.tipo} type="button" className="tipo-opcion"
-                onClick={() => setBloques([...bloques, bloqueVacio(t.tipo)])}>
-                <span className="nombre">{t.nombre}</span>
-                <span className="desc">{t.descripcion}</span>
-              </button>
+      {error ? <p className="error">{error}</p> : null}
+
+      {resumenExtraccion ? <p className="aviso">{resumenExtraccion}</p> : null}
+
+      {omitido.length > 0 ? (
+        <div className="aviso">
+          <strong>No se transcribió:</strong>
+          <ul style={{ margin: "var(--space-2) 0 0", paddingLeft: "1.1rem" }}>
+            {omitido.map((o, i) => (
+              <li key={i}>{o}</li>
             ))}
-          </div>
-        </div>
-
-        <div>
-          <h2>Cambios sin guardar</h2>
-          {diff.hayCambios ? (
-            <ul style={{ margin: "var(--space-2) 0 0", paddingLeft: "1.1rem", fontSize: "var(--fs-micro)" }}>
-              {diff.cambios.map((c) => (
-                <li key={`${c.clase}-${c.bloqueId}`}>
-                  <strong>{ETIQUETA_CLASE[c.clase]}</strong>: {NOMBRE_TIPO.get(c.tipo) ?? c.tipo}
-                  {c.campos.length ? ` · ${c.campos.length} campo(s)` : ""}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p style={{ fontSize: "var(--fs-micro)", color: "var(--fg-3)", marginTop: "var(--space-2)" }}>
-              Todavía no cambiaste nada.
-            </p>
-          )}
-        </div>
-
-        <div className="campo">
-          <label htmlFor="comentario">Comentario de la revisión</label>
-          <textarea id="comentario" value={comentario} onChange={(e) => setComentario(e.target.value)}
-            placeholder="Qué corregiste y por qué" />
-        </div>
-
-        {error ? <p className="error">{error}</p> : null}
-
-        <p className="aviso">
-          Guardar crea una revisión nueva. Las anteriores no se modifican ni se borran.
-        </p>
-
-        <div style={{ display: "grid", gap: "var(--space-2)" }}>
-          <button className="boton" type="button" onClick={guardar}
-            disabled={guardando || !diff.hayCambios}>
-            {guardando ? "Guardando…" : "Guardar revisión"}
-          </button>
-          <button className="boton" data-variante="secundario" type="button"
-            onClick={() => setVerPrevia((v) => !v)}>
-            {verPrevia ? "Ocultar vista previa" : "Ver vista previa"}
-          </button>
-        </div>
-      </aside>
-
-      {verPrevia ? (
-        <div style={{ gridColumn: "1 / -1", background: "var(--famiq-grey-200)", padding: "8mm", display: "flex", justifyContent: "center" }}>
-          <FichaPaginada
-            datos={datosPrevia}
-            bloques={bloques}
-            assets={assets}
-            tituloInterior="Tabla de cotas y dimensiones"
-            antetitulo={producto}
-          />
+          </ul>
         </div>
       ) : null}
+
+      <div className="taller-paneles">
+        <aside className="taller-izq">
+          <ListaOrden
+            bloques={bloques}
+            seleccionado={seleccionado}
+            nuevos={new Set(bloques.filter((b) => !idsIniciales.has(b.id)).map((b) => b.id))}
+            onSeleccionar={setSeleccionado}
+            onMover={moverA}
+            onSoltarTipo={(tipo, destino) => insertarEn(tipo, destino)}
+          />
+          <PaletaBloques onAgregar={(tipo) => insertarEn(tipo, bloques.length)} />
+        </aside>
+
+        <Lienzo
+          datos={datosPrevia}
+          bloques={bloquesParaLienzo}
+          assets={assets}
+          producto={producto}
+          seleccionado={seleccionado}
+          onSeleccionar={setSeleccionado}
+          onMover={moverAntesDe}
+          onInsertar={insertarAntesDe}
+          onAncho={cambiarAncho}
+          onAsset={asignarAsset}
+        />
+
+        <aside className="taller-der">
+          <Inspector
+            bloque={seleccion}
+            esNuevo={seleccion ? !idsIniciales.has(seleccion.id) : false}
+            assetsDisponibles={assetsDisponibles}
+            onChange={(nuevo) =>
+              setBloques((previos) => previos.map((b) => (b.id === nuevo.id ? nuevo : b)))
+            }
+            onAncho={(ancho) => seleccion && cambiarAncho(seleccion.id, ancho)}
+            onDuplicar={() => seleccion && duplicar(seleccion.id)}
+            onEliminar={() => seleccion && eliminar(seleccion.id)}
+          />
+
+          <div className="taller-guardar">
+            {avisos.length > 0 ? (
+              <div className="aviso">
+                <strong>Revisá antes de guardar:</strong>
+                <ul style={{ margin: "var(--space-2) 0 0", paddingLeft: "1.1rem" }}>
+                  {avisos.map((a) => (
+                    <li key={`${a.bloqueId}-${a.mensaje}`}>
+                      <button
+                        type="button"
+                        className="enlace-aviso"
+                        onClick={() => setSeleccionado(a.bloqueId)}
+                      >
+                        {a.mensaje}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            <h3>Cambios sin guardar</h3>
+            {diff.hayCambios ? (
+              <ul className="lista-cambios">
+                {diff.cambios.map((c) => (
+                  <li key={`${c.clase}-${c.bloqueId}`}>
+                    <strong>{ETIQUETA_CLASE[c.clase]}</strong>: {NOMBRE_TIPO.get(c.tipo) ?? c.tipo}
+                    {c.campos.length ? ` · ${c.campos.length} campo(s)` : ""}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="paleta-vacia">Todavía no cambiaste nada.</p>
+            )}
+
+            <div className="campo">
+              <label htmlFor="comentario">Comentario de la revisión</label>
+              <textarea
+                id="comentario"
+                value={comentario}
+                onChange={(e) => setComentario(e.target.value)}
+                placeholder="Qué corregiste y por qué"
+              />
+            </div>
+
+            <p className="aviso">
+              Guardar crea una revisión nueva. Las anteriores no se modifican ni se borran.
+            </p>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

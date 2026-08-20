@@ -64,19 +64,19 @@ test("un PDF se transcribe a bloques y queda como borrador sin guardar", async (
   expect(antes.length).toBe(1);
 
   await page.goto(`/fichas/${fichaId}/editar`);
-  await expect(page.locator(".bloque-editor")).toHaveCount(0);
+  await expect(page.locator(".orden-item")).toHaveCount(0);
 
   await page.locator("#pdf-origen").setInputFiles(PDF);
   // El botón vuelve a su texto normal cuando termina la transcripción.
-  await expect(page.getByRole("button", { name: "Elegir PDF…" })).toBeVisible({
+  await expect(page.getByRole("button", { name: "Cargar desde PDF" })).toBeVisible({
     timeout: 120_000,
   });
 
   // Transcribió varios bloques, con el header primero (§4).
-  const bloques = await page.locator(".bloque-editor").count();
+  const bloques = await page.locator(".orden-item").count();
   expect(bloques).toBeGreaterThan(3);
   // Las mayúsculas del rótulo son de CSS, así que se compara sin distinguir caso.
-  await expect(page.locator(".bloque-editor .tipo").first()).toContainText(/cabecera/i);
+  await expect(page.locator(".orden-item").first()).toContainText(/cabecera/i);
 
   // Y NO guardó: sigue habiendo una sola revisión.
   const durante = await rest(`ficha_revision?ficha_id=eq.${fichaId}&select=n`);
@@ -105,7 +105,7 @@ test("el contenido que no entra en un bloque se informa, no se descarta en silen
 
   await page.goto(`/fichas/${fichaId}/editar`);
   await page.locator("#pdf-origen").setInputFiles(PDF);
-  await expect(page.getByRole("button", { name: "Elegir PDF…" })).toBeVisible({
+  await expect(page.getByRole("button", { name: "Cargar desde PDF" })).toBeVisible({
     timeout: 120_000,
   });
 

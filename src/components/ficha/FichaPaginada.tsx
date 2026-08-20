@@ -35,11 +35,12 @@ export default function FichaPaginada({
   // muchas filas, dejarlo montado duplicaría el DOM sin ganar nada.
   const [midiendo, setMidiendo] = useState(true);
 
-  const medir = useCallback(() => {
+  /** Mide y reparte. Devuelve false si el medidor todavía no está en el DOM. */
+  const medir = useCallback((): boolean => {
     const medidas: Medidas = medirEnDocumento();
-    // Sin alto útil el reparto no tiene sentido: pasa si el medidor todavía
-    // no llegó al DOM. Se reintenta cuando las fuentes terminan de cargar.
-    if (medidas.altoUtilPrimera <= 0) return;
+    // Sin alto útil no hay nada que repartir: pasa cuando el medidor todavía no
+    // llegó al DOM, y es la señal de que hay que reintentar.
+    if (medidas.altoUtilPrimera <= 0) return false;
 
     const repartidas = repartirEnHojas(bloques, medidas);
     setHojas(
@@ -51,22 +52,36 @@ export default function FichaPaginada({
           : {}),
       })),
     );
+    return true;
   }, [bloques, tituloInterior, antetitulo]);
 
   // Un cambio de bloques exige volver a montar el medidor y medir de nuevo.
   useEffect(() => {
     setMidiendo(true);
-  }, [bloques]);
+  }, [bloques, tituloInterior, antetitulo]);
 
-  // Medir antes de la pintura, para no mostrar el medidor.
+  /**
+   * Medir antes de la pintura, para no mostrar el medidor.
+   *
+   * Las dos condiciones de este efecto son la corrección de un bug que dejaba
+   * la hoja mostrando el reparto viejo —agregar un bloque no se veía—:
+   *
+   * - Depende de `midiendo` porque cuando cambian los bloques el medidor está
+   *   desmontado, así que esta pasada no encuentra nada; recién en el render
+   *   siguiente, ya montado, hay algo que medir.
+   * - La pasada por las fuentes se encadena ACÁ, después de una medición que
+   *   funcionó, y no en su propio efecto. Estando las fuentes ya cargadas,
+   *   `document.fonts.ready` resuelve en el microtask siguiente: en un efecto
+   *   aparte apagaba `midiendo` antes de que el medidor llegara al DOM, y
+   *   entonces no se montaba nunca y no se medía nunca.
+   */
   useLayoutEffect(() => {
-    medir();
-  }, [medir]);
+    if (!midiendo) return;
+    if (!medir()) return;
 
-  // Las fuentes cambian el alto del texto: sin volver a medir cuando cargan,
-  // el primer reparto usa las métricas de la fuente de sistema y corta en el
-  // lugar equivocado.
-  useEffect(() => {
+    // Las fuentes cambian el alto del texto: sin volver a medir cuando cargan,
+    // el reparto usa las métricas de la fuente de sistema y corta en el lugar
+    // equivocado. Al terminar se desmonta el medidor, que duplica el DOM.
     let vigente = true;
     document.fonts.ready.then(() => {
       if (!vigente) return;
@@ -76,7 +91,8 @@ export default function FichaPaginada({
     return () => {
       vigente = false;
     };
-  }, [medir]);
+  }, [medir, midiendo]);
+
 
   return (
     <>

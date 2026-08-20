@@ -52,7 +52,8 @@ function Encabezado({ etiqueta, sufijo }: { etiqueta: string; sufijo?: string })
 
 export function Header({ bloque, fotoSrc }: { bloque: BloqueHeader; fotoSrc?: string }) {
   return (
-    <section className="bloque bloque-header" data-ancho={bloque.ancho ?? "completo"}>
+    <section className="bloque bloque-header"
+      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "completo"}>
       <div>
         <h1>{bloque.tituloEs}</h1>
         {bloque.subtituloEn ? <p className="nombre-en">{bloque.subtituloEn}</p> : null}
@@ -73,6 +74,7 @@ export function TablaKv({ bloque }: { bloque: BloqueTablaKv }) {
   return (
     <section
       className="bloque bloque-tabla-kv"
+      data-bloque-id={bloque.id}
       data-ancho={bloque.ancho ?? "medio"}
       data-orientacion={bloque.orientacion ?? "horizontal"}
     >
@@ -89,7 +91,8 @@ export function TablaKv({ bloque }: { bloque: BloqueTablaKv }) {
 
 export function ParTexto({ bloque }: { bloque: BloqueParTexto }) {
   return (
-    <section className="bloque bloque-par-texto" data-ancho={bloque.ancho ?? "completo"}>
+    <section className="bloque bloque-par-texto"
+      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "completo"}>
       {[bloque.izquierda, bloque.derecha].map((lado, i) => (
         <div key={i}>
           <Etiqueta tono="gris">{lado.etiqueta}</Etiqueta>
@@ -102,7 +105,8 @@ export function ParTexto({ bloque }: { bloque: BloqueParTexto }) {
 
 export function Tabla({ bloque }: { bloque: BloqueTabla }) {
   return (
-    <section className="bloque bloque-tabla" data-ancho={bloque.ancho ?? "completo"}>
+    <section className="bloque bloque-tabla"
+      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "completo"}>
       <Encabezado etiqueta={bloque.etiqueta} sufijo={bloque.sufijo} />
       <table className="tabla-datos">
         <thead>
@@ -132,7 +136,8 @@ export function Tabla({ bloque }: { bloque: BloqueTabla }) {
 
 export function InlineKv({ bloque }: { bloque: BloqueInlineKv }) {
   return (
-    <section className="bloque bloque-inline-kv" data-ancho={bloque.ancho ?? "completo"}>
+    <section className="bloque bloque-inline-kv"
+      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "completo"}>
       <span className="etiqueta">{bloque.etiqueta}</span>
       <span className="valor">{bloque.valor}</span>
     </section>
@@ -141,7 +146,8 @@ export function InlineKv({ bloque }: { bloque: BloqueInlineKv }) {
 
 export function TextoRico({ bloque }: { bloque: BloqueTextoRico }) {
   return (
-    <section className="bloque bloque-texto-rico" data-ancho={bloque.ancho ?? "medio"}>
+    <section className="bloque bloque-texto-rico"
+      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "medio"}>
       <Encabezado etiqueta={bloque.etiqueta} />
       {bloque.parrafos.map((p, i) => (
         <p key={i}>{p}</p>
@@ -152,7 +158,8 @@ export function TextoRico({ bloque }: { bloque: BloqueTextoRico }) {
 
 export function Chips({ bloque }: { bloque: BloqueChips }) {
   return (
-    <section className="bloque bloque-chips" data-ancho={bloque.ancho ?? "medio"}>
+    <section className="bloque bloque-chips"
+      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "medio"}>
       <Encabezado etiqueta={bloque.etiqueta} />
       <div className="items">
         {bloque.items.map((item, i) => (
@@ -167,7 +174,8 @@ export function Chips({ bloque }: { bloque: BloqueChips }) {
 
 export function Croquis({ bloque, src }: { bloque: BloqueCroquis; src?: string }) {
   return (
-    <section className="bloque bloque-croquis" data-ancho={bloque.ancho ?? "completo"}>
+    <section className="bloque bloque-croquis"
+      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "completo"}>
       <div className="marco">
         {src ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -190,7 +198,8 @@ export function Croquis({ bloque, src }: { bloque: BloqueCroquis; src?: string }
 
 export function TablaDim({ bloque }: { bloque: BloqueTablaDim }) {
   return (
-    <section className="bloque bloque-tabla-dim" data-ancho={bloque.ancho ?? "completo"}>
+    <section className="bloque bloque-tabla-dim"
+      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "completo"}>
       <div className="tablas">
         {bloque.tablas.map((tabla, i) => (
           <div key={i}>
@@ -225,7 +234,8 @@ export function TablaDim({ bloque }: { bloque: BloqueTablaDim }) {
 
 export function BarraDestacada({ bloque }: { bloque: BloqueBarraDestacada }) {
   return (
-    <section className="bloque bloque-barra-destacada" data-ancho={bloque.ancho ?? "completo"}>
+    <section className="bloque bloque-barra-destacada"
+      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "completo"}>
       <div className="banda">
         <span className="etiqueta">{bloque.etiqueta}</span>
         <span className="valor">{bloque.valor}</span>
@@ -238,6 +248,7 @@ export function Imagen({ bloque, src }: { bloque: BloqueImagen; src?: string }) 
   return (
     <section
       className="bloque bloque-imagen"
+      data-bloque-id={bloque.id}
       data-ancho={bloque.ancho ?? "medio"}
       data-filas={filasDe(bloque)}
       data-marco={bloque.marco ? "true" : undefined}
@@ -270,7 +281,8 @@ export function ListaComponentes({ bloque }: { bloque: BloqueListaComponentes })
   );
 
   return (
-    <section className="bloque bloque-lista-componentes" data-ancho={bloque.ancho ?? "completo"}>
+    <section className="bloque bloque-lista-componentes"
+      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "completo"}>
       <Encabezado etiqueta={bloque.etiqueta} sufijo={bloque.sufijo} />
       <div className="columnas">
         {mitades.map((mitad, i) => (
@@ -308,7 +320,8 @@ export function ListaComponentes({ bloque }: { bloque: BloqueListaComponentes })
 
 export function TablaAncha({ bloque }: { bloque: BloqueTablaAncha }) {
   return (
-    <section className="bloque bloque-tabla-ancha" data-ancho={bloque.ancho ?? "completo"}>
+    <section className="bloque bloque-tabla-ancha"
+      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "completo"}>
       <Encabezado etiqueta={bloque.etiqueta} sufijo={bloque.sufijo} />
       <table className="tabla-banda">
         <thead>
@@ -349,7 +362,8 @@ export function Codigos({ bloque, src }: { bloque: BloqueCodigos; src?: string }
   );
 
   return (
-    <section className="bloque bloque-codigos" data-ancho={bloque.ancho ?? "completo"}>
+    <section className="bloque bloque-codigos"
+      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "completo"}>
       <Encabezado etiqueta={bloque.etiqueta} sufijo={bloque.sufijo} />
       <div className="cuerpo">
         <div>
@@ -392,7 +406,8 @@ export function Chart({ bloque }: { bloque: BloqueChart }) {
   const tabla = seriesATabla(bloque.series, bloque.etiquetaX || "x");
 
   return (
-    <section className="bloque bloque-chart" data-ancho={bloque.ancho ?? "completo"}>
+    <section className="bloque bloque-chart"
+      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "completo"}>
       <Encabezado etiqueta={bloque.etiqueta} />
       <div className="grafico" dangerouslySetInnerHTML={{ __html: svg }} />
       {tabla.filas.length > 0 ? (
