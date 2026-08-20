@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { crearClienteServidor } from "@/lib/supabase/cliente-servidor";
 import { comoBloques, type FichaEstado } from "@/lib/tipos";
 import { generarPdf } from "@/lib/pdf/generar";
+import { TITULO_INTERIOR_POR_OMISION } from "@/lib/paginado";
 import { NOTA_AL_PIE } from "@/components/ficha/FichaVista";
 import { datosDeCabecera } from "@/lib/ficha-textos";
 import { assetsDeFamilia } from "@/app/acciones-assets";
@@ -94,7 +95,7 @@ export async function GET(
         estado: ficha.estado,
         nota: NOTA_AL_PIE,
         bloques,
-        tituloInterior: "Tabla de cotas y dimensiones",
+        tituloInterior: TITULO_INTERIOR_POR_OMISION,
         antetitulo: ficha.producto?.nombre_es ?? "",
       },
       assets.mapa,
@@ -110,9 +111,61 @@ export async function GET(
     });
   } catch (e) {
     console.error("[pdf] falló la generación", e);
-    return NextResponse.json(
-      { error: "No pudimos generar el PDF. Revisá el log del servidor." },
-      { status: 500 },
+    // El motivo va en la respuesta y no sólo al log. "Revisá el log del
+    // servidor" obliga a entrar al panel de Vercel para enterarse de algo que
+    // la app ya sabe, y el render del PDF falla por causas que se distinguen
+    // entre sí: falta el binario de Chromium, se quedó sin memoria, o no
+    // resolvió una imagen. Sin el motivo, las tres se ven igual.
+    return NextResponse.json({ error: mensajeDeFallo(e) }, { status: 500 });
+  }
+}
+
+/**
+ * Traduce el fallo del render a algo que se pueda accionar.
+ *
+ * Los tres primeros casos son los que efectivamente aparecen en la función
+ * serverless, donde Chromium es otro binario que el de desarrollo — así que
+ * este camino no se ejercita corriendo la app local. El resto se informa con el
+ * mensaje del error, que es más que nada.
+ */
+function mensajeDeFallo(e: unknown): string {
+  const detalle = e instanceof Error ? e.message : String(e);
+  const texto = detalle.toLowerCase();
+
+  if (
+    texto.includes("could not find chrome") ||
+    texto.includes("executablepath") ||
+    texto.includes("enoent") ||
+    texto.includes("no encontramos chromium")
+  ) {
+    return (
+      "El servidor no encontró el navegador que dibuja el PDF. En Vercel eso " +
+      "suele ser que el binario de Chromium no entró en la función. " +
+      `Detalle: ${detalle}`
     );
   }
+
+  if (
+    texto.includes("out of memory") ||
+    texto.includes("oom") ||
+    texto.includes("killed") ||
+    texto.includes("target closed") ||
+    texto.includes("connection closed") ||
+    texto.includes("protocol error")
+  ) {
+    return (
+      "El navegador se cerró antes de terminar el PDF, casi siempre por falta " +
+      "de memoria en la función. Probá con una ficha de menos imágenes para " +
+      `confirmarlo. Detalle: ${detalle}`
+    );
+  }
+
+  if (texto.includes("timeout") || texto.includes("timed out")) {
+    return (
+      "El render del PDF pasó el tiempo máximo de la función. " +
+      `Detalle: ${detalle}`
+    );
+  }
+
+  return `No pudimos generar el PDF. ${detalle}`;
 }

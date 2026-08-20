@@ -11,6 +11,7 @@ import FichaPaginada from "@/components/ficha/FichaPaginada";
 import { NOTA_AL_PIE } from "@/components/ficha/FichaVista";
 import { datosDeCabecera } from "@/lib/ficha-textos";
 import { assetsDeFamilia } from "@/app/acciones-assets";
+import { TITULO_INTERIOR_POR_OMISION } from "@/lib/paginado";
 
 interface FichaDetalle {
   id: string;
@@ -166,7 +167,7 @@ export default async function FichaPage({ params }: { params: Promise<{ id: stri
                   nota: NOTA_AL_PIE,
                 }}
                 bloques={bloques}
-                tituloInterior="Tabla de cotas y dimensiones"
+                tituloInterior={TITULO_INTERIOR_POR_OMISION}
                 antetitulo={ficha.producto?.nombre_es ?? ""}
                 assets={assets.mapa}
               />

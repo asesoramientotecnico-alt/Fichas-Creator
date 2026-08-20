@@ -154,6 +154,13 @@ export interface BloqueInlineKv extends BloqueBase {
 
 export interface BloqueTextoRico extends BloqueBase {
   tipo: "texto-rico";
+  /**
+   * Reparte los párrafos en dos columnas dentro del ancho del bloque, en vez
+   * de uno debajo del otro. Es una disposición, no un tipo nuevo: mismos
+   * campos y misma estética. Sirve para una descripción larga que a ancho
+   * completo deja renglones de más de cien caracteres.
+   */
+  columnas?: 2;
   etiqueta: string;
   /** Párrafos. Sólo negrita e itálica (§4). */
   parrafos: string[];

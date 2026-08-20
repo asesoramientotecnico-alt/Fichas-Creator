@@ -415,3 +415,5 @@ textarea { resize: vertical; min-height: 4.5em; }
 /* En el lienzo la marca se puede agarrar; en la ficha impresa no existe cursor. */
 .lienzo .marca-cota { cursor: grab; }
 .lienzo .marca-cota:hover { outline: 1px solid var(--famiq-red); }
+
+.zoom-real { color: var(--fg-3); font-variant-numeric: tabular-nums; }

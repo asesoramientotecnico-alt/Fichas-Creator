@@ -194,7 +194,8 @@ export default function CamposBloque({
     case "header":
       return (
         <>
-          <Texto etiqueta="Familia" valor={bloque.familia} onChange={(v) => set({ familia: v })} />
+          <Texto etiqueta="Línea (el texto gris debajo de la píldora)" valor={bloque.familia}
+            placeholder="Consumibles industriales" onChange={(v) => set({ familia: v })} />
           <Texto etiqueta="Subfamilia" valor={bloque.subfamilia} onChange={(v) => set({ subfamilia: v })} />
           <Texto etiqueta="Título (castellano)" valor={bloque.tituloEs} onChange={(v) => set({ tituloEs: v })} />
           <Texto etiqueta="Subtítulo (inglés)" valor={bloque.subtituloEn ?? ""} onChange={(v) => set({ subtituloEn: v })} />
@@ -341,6 +342,15 @@ export default function CamposBloque({
     case "texto-rico":
       return (
         <>
+          <Opcion
+            etiqueta="Disposición de los párrafos"
+            valor={bloque.columnas === 2 ? "2" : "1"}
+            opciones={[
+              { valor: "1", nombre: "Uno debajo del otro" },
+              { valor: "2", nombre: "En dos columnas" },
+            ]}
+            onChange={(v) => set({ columnas: v === "2" ? 2 : undefined })}
+          />
           <Texto etiqueta="Etiqueta de la sección" valor={bloque.etiqueta} onChange={(v) => set({ etiqueta: v })} />
           <div className="sub-lista">
             {bloque.parrafos.map((p, i) => (

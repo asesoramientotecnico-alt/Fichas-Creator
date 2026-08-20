@@ -111,6 +111,17 @@ export function agruparEnFilas(
 }
 
 /**
+ * Título por omisión de una hoja interior.
+ *
+ * Antes acá decía "Tabla de cotas y dimensiones", que es el título de la
+ * segunda hoja de la ficha de la tuerca y estaba hardcodeado en cuatro
+ * lugares. No todas las segundas hojas son cotas: el título lo declara el
+ * bloque que abre la hoja, con `tituloHoja`, y esto es sólo lo que se usa
+ * cuando ninguno lo declaró.
+ */
+export const TITULO_INTERIOR_POR_OMISION = "Continuación";
+
+/**
  * Título de una hoja interior: el del primer bloque que declare uno, o el
  * título general de la ficha si ninguno lo hace.
  */

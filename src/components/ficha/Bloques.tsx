@@ -175,11 +175,16 @@ export function InlineKv({ bloque }: { bloque: BloqueInlineKv }) {
 export function TextoRico({ bloque }: { bloque: BloqueTextoRico }) {
   return (
     <section className="bloque bloque-texto-rico"
-      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "medio"}>
+      data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "medio"}
+      data-columnas={bloque.columnas === 2 ? "2" : undefined}>
       <Encabezado etiqueta={bloque.etiqueta} />
-      {bloque.parrafos.map((p, i) => (
-        <p key={i}>{p}</p>
-      ))}
+      {/* El rótulo queda arriba, a ancho completo: son los párrafos los que se
+          reparten en columnas, no la sección entera. */}
+      <div className="cuerpo-texto">
+        {bloque.parrafos.map((p, i) => (
+          <p key={i}>{p}</p>
+        ))}
+      </div>
     </section>
   );
 }

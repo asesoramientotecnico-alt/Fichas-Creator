@@ -542,6 +542,20 @@
   margin-bottom: 0;
 }
 
+/* Párrafos a dos columnas dentro del ancho del bloque. El canal de 7mm es el
+   mismo que separa las dos tablas de `lista-componentes`, así que la hoja
+   sigue teniendo un solo ritmo de columnas. */
+.bloque-texto-rico[data-columnas="2"] .cuerpo-texto {
+  column-count: 2;
+  column-gap: 7mm;
+}
+
+/* Un párrafo no se corta entre columnas: partir una oración a la mitad y
+   seguirla arriba de la columna siguiente se lee mal en una ficha corta. */
+.bloque-texto-rico[data-columnas="2"] .cuerpo-texto p {
+  break-inside: avoid;
+}
+
 /* ------------------------------------------------------------
    chips — borde y texto rojos sobre fondo rosado, en mayúsculas.
    En la V26 dejaron de ser grises: son la marca de color de la hoja.
@@ -844,6 +858,13 @@
 
 .hoja[data-borrador="true"] {
   position: relative;
+  /* La marca de agua está rotada 32°, así que su caja se sale de la hoja por
+     los cuatro lados. En el PDF eso no se nota porque `@page` recorta, pero en
+     pantalla creaba scroll horizontal en el lienzo: sesenta píxeles de nada,
+     imposibles de encontrar porque un pseudo-elemento no aparece en el DOM.
+     Una hoja A4 recorta lo que se pasa, que es justo lo que hace el papel.
+     `clip` y no `hidden` para no convertir la hoja en un contenedor de scroll. */
+  overflow: clip;
 }
 
 .hoja[data-borrador="true"]::after {

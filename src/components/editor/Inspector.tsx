@@ -3,7 +3,7 @@
 import type { AnchoBloque, Bloque } from "@/lib/tipos";
 import type { AssetDisponible } from "@/app/acciones-assets";
 import { TIPOS_DISPONIBLES } from "@/lib/bloques-nuevos";
-import { anchoDe } from "@/lib/paginado";
+import { anchoDe, TITULO_INTERIOR_POR_OMISION } from "@/lib/paginado";
 import CamposBloque from "./CamposBloque";
 import { empezarArrastre } from "./arrastre";
 
@@ -112,6 +112,28 @@ export default function Inspector({
         assetsDisponibles={assetsDisponibles}
         onChange={onChange}
       />
+
+      {/* El título de una hoja interior lo aporta el bloque que la abre y no la
+          hoja (§4): el paginado decide qué bloque cae en qué hoja, así que un
+          título declarado por hoja se despegaría de su contenido al cambiar el
+          reparto. Acá se ve y se edita. */}
+      <div className="campo">
+        <label htmlFor={`titulo-hoja-${bloque.id}`}>
+          Título de la hoja, si este bloque la abre
+        </label>
+        <input
+          id={`titulo-hoja-${bloque.id}`}
+          value={bloque.tituloHoja ?? ""}
+          placeholder="Ej. Tabla de cotas y dimensiones"
+          onChange={(e) =>
+            onChange({ ...bloque, tituloHoja: e.target.value.trim() ? e.target.value : undefined })
+          }
+        />
+        <p className="paleta-vacia">
+          Se usa sólo cuando este bloque queda primero en una hoja interior. Si
+          ninguno lo declara, la hoja dice «{TITULO_INTERIOR_POR_OMISION}».
+        </p>
+      </div>
 
       {llevaImagen && assetsDisponibles.length > 0 ? (
         <div className="libreria">

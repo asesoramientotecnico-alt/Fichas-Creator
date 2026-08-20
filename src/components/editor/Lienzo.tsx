@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AnchoBloque, Bloque, TipoBloque } from "@/lib/tipos";
 import { PISTAS_GRILLA, PISTAS_POR_ANCHO } from "@/lib/tipos";
-import { anchoDe } from "@/lib/paginado";
+import { anchoDe, TITULO_INTERIOR_POR_OMISION } from "@/lib/paginado";
 import FichaPaginada from "@/components/ficha/FichaPaginada";
 import type { DatosFicha } from "@/components/ficha/FichaVista";
 import { cargaDe, esNuestro } from "./arrastre";
@@ -31,6 +31,19 @@ interface Recuadro {
   izquierda: number;
   ancho: number;
   alto: number;
+}
+
+/**
+ * El nodo VISIBLE de un bloque.
+ *
+ * El medidor oculto dibuja cada bloque una segunda vez, con el mismo
+ * `data-bloque-id`, y vive fuera de la pantalla para no verse. Un
+ * `querySelector` suelto encontraba esa copia primero, así que el marco de
+ * selección se dibujaba a noventa mil píxeles a la izquierda. La búsqueda se
+ * acota a `.ficha`, que es la hoja de verdad.
+ */
+function nodoDelBloque(caja: HTMLElement, id: string): Element | null {
+  return caja.querySelector(`.ficha [data-bloque-id="${CSS.escape(id)}"]`);
 }
 
 export default function Lienzo({
@@ -61,12 +74,51 @@ export default function Lienzo({
   onMarca: (id: string, indice: number, x: number, y: number) => void;
 }) {
   const contenedor = useRef<HTMLDivElement>(null);
-  // La hoja mide 210 mm: en un notebook no entra a tamaño real. El zoom usa la
-  // propiedad `zoom` y no `transform`, porque `zoom` sí afecta el layout y así
-  // el scroll del lienzo abarca la hoja escalada. Las manijas se miden con
-  // getBoundingClientRect, que ya devuelve píxeles visuales, así que siguen
-  // cayendo en su lugar sin corregir nada.
-  const [zoom, setZoom] = useState(1);
+  /**
+   * La hoja mide 210 mm: en un notebook no entra a tamaño real, y a tamaño real
+   * el lienzo obliga a scrollear de lado para leer una fila — que es justo lo
+   * que hace incómoda la navegación. Por eso el modo por omisión es "ajustar":
+   * el zoom se calcula para que la hoja entre en el ancho disponible y se
+   * recalcula cuando el panel cambia de tamaño.
+   *
+   * Se usa la propiedad `zoom` y no `transform` porque `zoom` sí afecta el
+   * layout, así el scroll del lienzo abarca la hoja escalada. Las manijas se
+   * miden con getBoundingClientRect, que ya devuelve píxeles visuales, así que
+   * siguen cayendo en su lugar sin corregir nada.
+   */
+  const [zoomElegido, setZoomElegido] = useState<number | "ajustar">("ajustar");
+  const [zoomAjustado, setZoomAjustado] = useState(1);
+  const zoom = zoomElegido === "ajustar" ? zoomAjustado : zoomElegido;
+
+  // Ancho de la hoja en píxeles CSS: 210 mm a 96 dpi.
+  const ANCHO_HOJA = (210 / 25.4) * 96;
+
+  useEffect(() => {
+    const caja = contenedor.current;
+    if (!caja) return;
+
+    const recalcular = () => {
+      const estilo = getComputedStyle(caja);
+      const disponible =
+        caja.clientWidth -
+        parseFloat(estilo.paddingLeft || "0") -
+        parseFloat(estilo.paddingRight || "0");
+      if (disponible <= 0) return;
+      // Nunca se amplía más allá del tamaño real, y no baja de 35%: por debajo
+      // de eso la hoja no se lee y elegir un bloque se vuelve puntería.
+      const factor = Math.min(1, Math.max(0.35, disponible / ANCHO_HOJA));
+      // A centésimas para no repintar por una fracción de pixel, y hacia ABAJO:
+      // redondear hacia arriba deja la hoja tres píxeles más ancha que su
+      // columna, y esos tres píxeles son una barra de scroll horizontal.
+      setZoomAjustado(Math.floor(factor * 100) / 100);
+    };
+
+    recalcular();
+    const observador = new ResizeObserver(recalcular);
+    observador.observe(caja);
+    return () => observador.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [recuadro, setRecuadro] = useState<Recuadro | null>(null);
   const [destino, setDestino] = useState<string | null>(null);
   const [recuadroDestino, setRecuadroDestino] = useState<Recuadro | null>(null);
@@ -74,7 +126,10 @@ export default function Lienzo({
   /** El id del bloque bajo el evento, si hay alguno. */
   const bloqueDe = (e: { target: EventTarget | null }): string | null => {
     const nodo = e.target instanceof Element ? e.target.closest("[data-bloque-id]") : null;
-    return nodo?.getAttribute("data-bloque-id") ?? null;
+    // El medidor está fuera de pantalla, así que no recibe eventos; se
+    // comprueba igual para que un cambio de su posición no rompa la selección.
+    if (!nodo || !nodo.closest(".ficha")) return null;
+    return nodo.getAttribute("data-bloque-id");
   };
 
   /**
@@ -85,7 +140,7 @@ export default function Lienzo({
   const recuadroDe = (id: string): Recuadro | null => {
     const caja = contenedor.current;
     if (!caja) return null;
-    const nodo = caja.querySelector(`[data-bloque-id="${CSS.escape(id)}"]`);
+    const nodo = nodoDelBloque(caja, id);
     if (!nodo) return null;
     const r = nodo.getBoundingClientRect();
     const c = caja.getBoundingClientRect();
@@ -127,7 +182,7 @@ export default function Lienzo({
    */
   const ajustarAncho = (id: string, xPuntero: number) => {
     const caja = contenedor.current;
-    const nodo = caja?.querySelector(`[data-bloque-id="${CSS.escape(id)}"]`);
+    const nodo = caja ? nodoDelBloque(caja, id) : null;
     const grilla = nodo?.closest(".grilla-bloques");
     if (!grilla || !nodo) return;
 
@@ -257,20 +312,35 @@ export default function Lienzo({
     >
       <div className="lienzo-zoom-barra">
         <span>Zoom</span>
+        <button
+          type="button"
+          className="zoom-opcion"
+          data-activo={zoomElegido === "ajustar" ? "true" : undefined}
+          title="La hoja entra en el ancho disponible, sin scroll horizontal"
+          onClick={(e) => {
+            e.stopPropagation();
+            setZoomElegido("ajustar");
+          }}
+        >
+          Ajustar
+        </button>
         {[0.5, 0.75, 1].map((z) => (
           <button
             key={z}
             type="button"
             className="zoom-opcion"
-            data-activo={zoom === z ? "true" : undefined}
+            data-activo={zoomElegido === z ? "true" : undefined}
             onClick={(e) => {
               e.stopPropagation();
-              setZoom(z);
+              setZoomElegido(z);
             }}
           >
             {Math.round(z * 100)}%
           </button>
         ))}
+        {zoomElegido === "ajustar" ? (
+          <span className="zoom-real">{Math.round(zoom * 100)}%</span>
+        ) : null}
       </div>
 
       <div className="lienzo-hoja">
@@ -279,7 +349,7 @@ export default function Lienzo({
             datos={datos}
             bloques={bloques}
             assets={assets}
-            tituloInterior="Tabla de cotas y dimensiones"
+            tituloInterior={TITULO_INTERIOR_POR_OMISION}
             antetitulo={producto}
           />
         </div>
