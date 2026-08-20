@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { crearClienteServidor } from "@/lib/supabase/cliente-servidor";
 import type { AssetTipo } from "@/lib/tipos";
+import { MAPA_UNIDADES_NEGOCIO } from "@/lib/unidades-negocio";
 
 /**
  * Librería de assets por familia (§7): el croquis se sube una vez, se asocia a
@@ -125,6 +126,9 @@ export async function assetsDeFamilia(
   const mapa: Record<string, string> = {
     producto: "/ficha/producto.png",
     croquis: "/ficha/croquis.png",
+    // Las unidades de negocio son un catálogo fijo, no de la familia: la
+    // píldora de cualquier ficha puede elegir cualquiera de ellas.
+    ...MAPA_UNIDADES_NEGOCIO,
   };
   if (!familiaId) return { lista: [], mapa };
 

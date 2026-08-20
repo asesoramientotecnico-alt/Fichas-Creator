@@ -4,8 +4,8 @@ import { FICHA_TUERCA, ASSETS_TUERCA } from "@/lib/fixtures/tuerca-autofrenante"
 import {
   BLOQUES_VALVULA,
   ASSETS_VALVULA,
-  DATOS_VALVULA,
   HOJAS_VALVULA,
+  datosCompletosValvula,
 } from "@/lib/fixtures/valvula-esferica";
 import { BLOQUES_CHART } from "@/lib/fixtures/chart-demo";
 import type { FichaEstado } from "@/lib/tipos";
@@ -42,7 +42,7 @@ function referencia(cual: string | null) {
     };
   }
   return {
-    datos: DATOS_VALVULA,
+    datos: datosCompletosValvula(),
     bloques: BLOQUES_VALVULA,
     assets: ASSETS_VALVULA,
     tituloInterior: HOJAS_VALVULA.tituloInterior,

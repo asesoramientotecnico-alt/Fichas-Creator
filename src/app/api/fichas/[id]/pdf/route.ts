@@ -3,6 +3,7 @@ import { crearClienteServidor } from "@/lib/supabase/cliente-servidor";
 import { comoBloques, type FichaEstado } from "@/lib/tipos";
 import { generarPdf } from "@/lib/pdf/generar";
 import { NOTA_AL_PIE } from "@/components/ficha/FichaVista";
+import { datosDeCabecera } from "@/lib/ficha-textos";
 import { assetsDeFamilia } from "@/app/acciones-assets";
 
 // Chromium necesita el runtime de Node, no el edge.
@@ -34,7 +35,7 @@ export async function GET(
 
   const { data: ficha } = await supabase
     .from("ficha")
-    .select("id, estado, version, anio, producto(sku, nombre_es, categoria, familia_id)")
+    .select("id, estado, version, anio, producto(sku, nombre_es, familia_id)")
     .eq("id", id)
     .maybeSingle()
     .overrideTypes<{
@@ -45,8 +46,7 @@ export async function GET(
       producto: {
         sku: string;
         nombre_es: string;
-        categoria: string | null;
-        familia_id: string | null;
+            familia_id: string | null;
       } | null;
     }>();
 
@@ -74,6 +74,9 @@ export async function GET(
   // Las imágenes salen de la librería de la familia (§7); el generador las
   // embebe como data URI para no depender de la URL firmada.
   const assets = await assetsDeFamilia(ficha.producto?.familia_id ?? null);
+  // Familia y píldora de unidad de negocio salen del bloque header, no del
+  // producto (ver unidades-negocio.ts).
+  const cabecera = datosDeCabecera(bloques, assets.mapa);
 
   try {
     // La marca de agua BORRADOR la decide FichaVista a partir del estado
@@ -82,8 +85,9 @@ export async function GET(
     // ocupa las hojas que haga falta, sin recortar.
     const { pdf, hojas } = await generarPdf(
       {
-        familia: ficha.producto?.categoria ?? "",
-        pildoraSrc: undefined,
+        familia: cabecera.familia,
+        pildoraSrc: cabecera.pildoraSrc,
+        pildoraAlt: cabecera.pildoraAlt,
         version: ficha.version,
         revision: revision?.n ?? 1,
         anio: ficha.anio,

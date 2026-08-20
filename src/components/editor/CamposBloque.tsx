@@ -3,6 +3,7 @@
 import { useId } from "react";
 import type { Bloque, AssetTipo } from "@/lib/tipos";
 import type { AssetDisponible } from "@/app/acciones-assets";
+import { UNIDADES_NEGOCIO } from "@/lib/unidades-negocio";
 
 /** Editores de campo por tipo de bloque. Ninguno acepta HTML ni estilos. */
 
@@ -141,6 +142,18 @@ export default function CamposBloque({
           <Texto etiqueta="Subfamilia" valor={bloque.subfamilia} onChange={(v) => set({ subfamilia: v })} />
           <Texto etiqueta="Título (castellano)" valor={bloque.tituloEs} onChange={(v) => set({ tituloEs: v })} />
           <Texto etiqueta="Subtítulo (inglés)" valor={bloque.subtituloEn ?? ""} onChange={(v) => set({ subtituloEn: v })} />
+          <Opcion
+            etiqueta="Unidad de negocio"
+            valor={bloque.pildoraAssetId ?? ""}
+            opciones={[
+              { valor: "", nombre: "Sin píldora" },
+              ...UNIDADES_NEGOCIO.map((u) => ({ valor: u.id, nombre: u.nombre })),
+            ]}
+            onChange={(v) => {
+              const unidad = UNIDADES_NEGOCIO.find((u) => u.id === v);
+              set({ pildoraAssetId: v || undefined, pildoraAlt: unidad?.nombre });
+            }}
+          />
           <SelectorAsset
             etiqueta="Foto de producto" tipo="foto" valor={bloque.fotoAssetId}
             disponibles={assetsDisponibles} onChange={(v) => set({ fotoAssetId: v })}

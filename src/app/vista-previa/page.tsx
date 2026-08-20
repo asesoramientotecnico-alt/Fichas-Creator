@@ -2,8 +2,8 @@ import FichaPaginada from "@/components/ficha/FichaPaginada";
 import {
   BLOQUES_VALVULA,
   ASSETS_VALVULA,
-  DATOS_VALVULA,
   HOJAS_VALVULA,
+  datosCompletosValvula,
 } from "@/lib/fixtures/valvula-esferica";
 
 /**
@@ -23,7 +23,7 @@ export default function VistaPreviaPage() {
       }}
     >
       <FichaPaginada
-        datos={DATOS_VALVULA}
+        datos={datosCompletosValvula()}
         bloques={BLOQUES_VALVULA}
         assets={ASSETS_VALVULA}
         tituloInterior={HOJAS_VALVULA.tituloInterior}

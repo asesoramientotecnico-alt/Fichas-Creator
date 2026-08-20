@@ -1,6 +1,7 @@
 import type { Bloque } from "@/lib/tipos";
 import type { DatosFicha } from "@/components/ficha/FichaVista";
-import { NOTA_AL_PIE } from "@/lib/ficha-textos";
+import { NOTA_AL_PIE, datosDeCabecera } from "@/lib/ficha-textos";
+import { MAPA_UNIDADES_NEGOCIO } from "@/lib/unidades-negocio";
 
 /**
  * Plantilla de referencia V26: "Válvula esférica 3 cuerpos Socket Weld".
@@ -31,7 +32,7 @@ export const BLOQUES_VALVULA: Bloque[] = [
     familia: "Válvulas industriales",
     subfamilia: "Válvula esférica",
     tituloEs: "Válvula esférica 3 cuerpos Socket Weld",
-    pildoraAssetId: "pildora",
+    pildoraAssetId: "fluidos-industriales",
     pildoraAlt: "Conducción de Fluidos Industriales",
     fotoAssetId: "producto",
   },
@@ -216,17 +217,23 @@ export const BLOQUES_VALVULA: Bloque[] = [
 ];
 
 export const ASSETS_VALVULA: Record<string, string> = {
-  pildora: "/ficha/valvula/pildora-fluidos.png",
   producto: "/ficha/valvula/producto.png",
   "grafico-presion": "/ficha/valvula/grafico-presion.png",
   despiece: "/ficha/valvula/despiece.png",
   "kit-sellos": "/ficha/valvula/kit-sellos.png",
+  // Las unidades de negocio son un catálogo fijo (unidades-negocio.ts),
+  // no un asset de esta ficha; se mezclan acá para que el fixture se resuelva
+  // igual que una ficha real.
+  ...MAPA_UNIDADES_NEGOCIO,
 };
 
+/**
+ * Familia y píldora NO se hardcodean acá: salen del bloque header de
+ * BLOQUES_VALVULA con `datosDeCabecera`, para no duplicar la misma fuente de
+ * verdad en dos lugares. Ver /vista-previa y /api/vista-previa/pdf.
+ */
 export const DATOS_VALVULA: Omit<DatosFicha, "hojas"> = {
-  familia: "Válvulas industriales",
-  pildoraSrc: ASSETS_VALVULA.pildora,
-  pildoraAlt: "Conducción de Fluidos Industriales",
+  familia: "",
   version: "V26",
   revision: 1,
   anio: 2026,
@@ -239,3 +246,8 @@ export const HOJAS_VALVULA = {
   tituloInterior: "Despiece y componentes",
   antetitulo: "Válvula esférica 3 cuerpos Socket Weld",
 };
+
+/** DATOS_VALVULA con familia y píldora ya resueltas desde el bloque header. */
+export function datosCompletosValvula(): Omit<DatosFicha, "hojas"> {
+  return { ...DATOS_VALVULA, ...datosDeCabecera(BLOQUES_VALVULA, ASSETS_VALVULA) };
+}

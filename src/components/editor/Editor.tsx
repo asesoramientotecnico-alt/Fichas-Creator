@@ -11,6 +11,7 @@ import CamposBloque from "./CamposBloque";
 import FichaPaginada from "@/components/ficha/FichaPaginada";
 import type { DatosFicha } from "@/components/ficha/FichaVista";
 import type { AssetDisponible } from "@/app/acciones-assets";
+import { datosDeCabecera } from "@/lib/ficha-textos";
 import "./editor.css";
 
 const NOMBRE_TIPO = new Map(TIPOS_DISPONIBLES.map((t) => [t.tipo, t.nombre]));
@@ -56,6 +57,19 @@ export default function Editor({
     () => new Set(bloquesIniciales.map((b) => b.id)),
     [bloquesIniciales],
   );
+
+  // La familia y la píldora de unidad de negocio se editan en el bloque
+  // header: la vista previa las tiene que seguir en vivo, no sólo mostrar la
+  // que trajo el servidor al abrir el editor.
+  const datosPrevia = useMemo(() => {
+    const cabecera = datosDeCabecera(bloques, assets ?? {});
+    return {
+      ...datosFicha,
+      familia: cabecera.familia || datosFicha.familia,
+      pildoraSrc: cabecera.pildoraSrc ?? datosFicha.pildoraSrc,
+      pildoraAlt: cabecera.pildoraAlt ?? datosFicha.pildoraAlt,
+    };
+  }, [bloques, assets, datosFicha]);
 
   const mover = (indice: number, delta: number) => {
     const destino = indice + delta;
@@ -199,7 +213,7 @@ export default function Editor({
       {verPrevia ? (
         <div style={{ gridColumn: "1 / -1", background: "var(--famiq-grey-200)", padding: "8mm", display: "flex", justifyContent: "center" }}>
           <FichaPaginada
-            datos={datosFicha}
+            datos={datosPrevia}
             bloques={bloques}
             assets={assets}
             tituloInterior="Tabla de cotas y dimensiones"

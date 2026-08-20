@@ -133,6 +133,25 @@ Tres, y las tres están medidas:
    verifica que ningún texto de una ficha use un carácter sin cobertura, así
    que este caso no puede volver por descuido.
 
+## Unidad de negocio: catálogo fijo, no asset de familia
+
+La píldora de color de la cabecera (`Conducción de Fluidos Industriales`,
+`Ferretería & Afines`, etc.) clasifica la LÍNEA de negocio del producto, no la
+familia: una válvula y una tuerca pueden compartir unidad de negocio sin
+compartir familia, y viceversa. Por eso no se sube como asset de familia (§7):
+vive en `src/lib/unidades-negocio.ts`, un catálogo fijo de 6 unidades con su
+imagen embebida en el repo, igual que el logo.
+
+Esto también dejó al descubierto un bug preexistente: `BloqueHeader.familia`
+y `.subfamilia` se editaban en el formulario del bloque header desde M3, pero
+ningún componente los leía — la línea gris de la cabecera salía de
+`producto.categoria`, un campo distinto que el usuario nunca ve en el editor.
+Se corrigió en el mismo cambio: `familia` y la unidad de negocio elegida
+(`pildoraAssetId`/`pildoraAlt`) ahora se leen del bloque header con
+`datosDeCabecera()` (`src/lib/ficha-textos.ts`), en la vista, el editor
+(en vivo, mientras se edita) y el PDF. `producto.categoria` deja de
+consultarse en esos tres lugares.
+
 ## Los bloques con imagen quedan conectados a la librería
 
 Hasta ahora las fichas resolvían sólo dos imágenes de demostración con ruta

@@ -9,6 +9,7 @@ import { estadosPosibles } from "@/app/acciones-ficha";
 import { ESTADOS_SIN_MARCA_DE_AGUA, comoBloques, type FichaEstado } from "@/lib/tipos";
 import FichaPaginada from "@/components/ficha/FichaPaginada";
 import { NOTA_AL_PIE } from "@/components/ficha/FichaVista";
+import { datosDeCabecera } from "@/lib/ficha-textos";
 import { assetsDeFamilia } from "@/app/acciones-assets";
 
 interface FichaDetalle {
@@ -21,7 +22,6 @@ interface FichaDetalle {
     sku: string;
     nombre_es: string;
     nombre_en: string | null;
-    categoria: string | null;
     familia_id: string | null;
   } | null;
 }
@@ -32,7 +32,7 @@ export default async function FichaPage({ params }: { params: Promise<{ id: stri
 
   const { data: ficha } = await supabase
     .from("ficha")
-    .select("id, estado, version, anio, created_at, producto(sku, nombre_es, nombre_en, categoria, familia_id)")
+    .select("id, estado, version, anio, created_at, producto(sku, nombre_es, nombre_en, familia_id)")
     .eq("id", id)
     .maybeSingle()
     .overrideTypes<FichaDetalle>();
@@ -59,6 +59,9 @@ export default async function FichaPage({ params }: { params: Promise<{ id: stri
   const bloques = comoBloques(actual?.bloques);
   // Los bloques con imagen apuntan a un asset de la familia por id (§7).
   const assets = await assetsDeFamilia(ficha.producto?.familia_id ?? null);
+  // Familia y píldora de unidad de negocio salen del bloque header, no del
+  // producto (ver unidades-negocio.ts).
+  const cabecera = datosDeCabecera(bloques, assets.mapa);
   const llevaMarcaDeAgua = !ESTADOS_SIN_MARCA_DE_AGUA.includes(ficha.estado);
   const posibles = await estadosPosibles(ficha.estado);
 
@@ -153,7 +156,9 @@ export default async function FichaPage({ params }: { params: Promise<{ id: stri
             <div style={{ background: "var(--famiq-grey-200)", padding: "8mm", marginTop: "var(--space-3)", display: "flex", justifyContent: "center", overflowX: "auto" }}>
               <FichaPaginada
                 datos={{
-                  familia: ficha.producto?.categoria ?? "",
+                  familia: cabecera.familia,
+                  pildoraSrc: cabecera.pildoraSrc,
+                  pildoraAlt: cabecera.pildoraAlt,
                   version: ficha.version,
                   revision: actual?.n ?? 1,
                   anio: ficha.anio,
