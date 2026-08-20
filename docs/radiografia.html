@@ -1,0 +1,725 @@
+<title>Radiografía de Fichas Técnicas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Condensed:wght@400;700&family=Roboto+Mono:wght@400;500&display=swap">
+
+<style>
+  /* ============================================================
+     Compuesto con el sistema de diseño del propio proyecto:
+     paleta FAMIQ (src/app/design-system.css) y familia Roboto.
+     ============================================================ */
+
+  :root {
+    --red:        #D62717;
+    --red-dark:   #A4210E;
+    --red-tenue:  #FFF5F4;
+    --graphite:   #474746;
+    --green:      #49B170;
+    --orange:     #ED6E26;
+
+    --ground:     #F6F6F6;
+    --surface:    #FFFFFF;
+    --surface-2:  #FBFAFA;
+    --fg-1:       #474746;
+    --fg-2:       #5E5E5E;
+    --fg-3:       #8A8A8A;
+    --rule:       #D9D9D9;
+    --rule-2:     #BFBFBF;
+    --rule-strong:#474746;
+
+    --sans:      'Roboto', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --cond:      'Roboto Condensed', 'Roboto', system-ui, sans-serif;
+    --mono:      'Roboto Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+    --track-wide:   .18em;
+    --track-eyebrow:.22em;
+
+    --measure: 68ch;
+    --gap:     clamp(1.1rem, 2.4vw, 1.8rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --red:        #F04A38;
+      --red-dark:   #D62717;
+      --red-tenue:  #2A1A18;
+      --graphite:   #C9C7C5;
+      --green:      #66C98A;
+      --orange:     #F2894A;
+
+      --ground:     #1A1A1A;
+      --surface:    #232322;
+      --surface-2:  #2B2B29;
+      --fg-1:       #EDEBE9;
+      --fg-2:       #B6B3B0;
+      --fg-3:       #8A8886;
+      --rule:       #3A3A38;
+      --rule-2:     #4C4C49;
+      --rule-strong:#7A7876;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --red:        #F04A38;
+    --red-dark:   #D62717;
+    --red-tenue:  #2A1A18;
+    --graphite:   #C9C7C5;
+    --green:      #66C98A;
+    --orange:     #F2894A;
+
+    --ground:     #1A1A1A;
+    --surface:    #232322;
+    --surface-2:  #2B2B29;
+    --fg-1:       #EDEBE9;
+    --fg-2:       #B6B3B0;
+    --fg-3:       #8A8886;
+    --rule:       #3A3A38;
+    --rule-2:     #4C4C49;
+    --rule-strong:#7A7876;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--fg-1);
+    font: 400 16px/1.62 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .hoja {
+    max-width: 62rem;
+    margin: 0 auto;
+    background: var(--surface);
+    border-left: 1px solid var(--rule);
+    border-right: 1px solid var(--rule);
+    padding: clamp(2rem, 5vw, 3.6rem) clamp(1.2rem, 5vw, 4rem) 5rem;
+  }
+
+  /* ---------- Rótulo de cabecera, como el de la ficha ---------- */
+
+  .rotulo {
+    display: flex;
+    align-items: baseline;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: .5rem;
+  }
+
+  .rotulo b {
+    font: 700 .78rem/1 var(--cond);
+    text-transform: uppercase;
+    letter-spacing: var(--track-eyebrow);
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: .45rem;
+    margin-bottom: -.5rem;
+  }
+
+  .rotulo span {
+    font: 400 .72rem/1 var(--mono);
+    letter-spacing: .1em;
+    color: var(--fg-3);
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font: 700 clamp(2.1rem, 6vw, 3.3rem)/1.02 var(--cond);
+    letter-spacing: -.015em;
+    text-transform: uppercase;
+    margin: 1.7rem 0 0;
+    text-wrap: balance;
+  }
+
+  .bajada {
+    max-width: var(--measure);
+    margin: 1rem 0 0;
+    font-size: 1.08rem;
+    color: var(--fg-2);
+  }
+
+  /* ---------- Secciones: encabezado bajo regla grafito ---------- */
+
+  section { margin-top: 3.4rem; }
+
+  h2 {
+    font: 700 .8rem/1 var(--cond);
+    text-transform: uppercase;
+    letter-spacing: var(--track-wide);
+    color: var(--fg-1);
+    border-top: 2px solid var(--rule-strong);
+    padding-top: .7rem;
+    margin: 0 0 1.3rem;
+  }
+
+  h3 {
+    font: 500 1.06rem/1.32 var(--sans);
+    margin: 2rem 0 .5rem;
+    text-wrap: balance;
+  }
+
+  p, li { max-width: var(--measure); }
+  p { margin: 0 0 .85rem; }
+
+  ul { margin: 0 0 .85rem; padding-left: 1.15rem; }
+  li { margin-bottom: .4rem; }
+
+  code, .dato {
+    font: 400 .875em/1.4 var(--mono);
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: .06em .34em;
+  }
+
+  strong { font-weight: 500; color: var(--fg-1); }
+  a { color: var(--red); text-decoration: none; border-bottom: 1px solid currentColor; }
+  a:hover { color: var(--red-dark); }
+  a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+
+  /* ---------- Veredicto ---------- */
+
+  .veredicto {
+    display: grid;
+    gap: var(--gap);
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    margin-bottom: 1.6rem;
+  }
+
+  .cifra {
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--red);
+    padding: .95rem 1rem 1.05rem;
+  }
+
+  .cifra dt {
+    font: 700 .66rem/1.25 var(--cond);
+    text-transform: uppercase;
+    letter-spacing: var(--track-wide);
+    color: var(--fg-3);
+    margin-bottom: .45rem;
+  }
+
+  .cifra dd {
+    margin: 0;
+    font: 700 1.65rem/1 var(--cond);
+    font-variant-numeric: tabular-nums;
+    color: var(--fg-1);
+  }
+
+  .cifra dd small {
+    display: block;
+    margin-top: .35rem;
+    font: 400 .78rem/1.35 var(--sans);
+    color: var(--fg-2);
+    letter-spacing: 0;
+  }
+
+  /* ---------- Hallazgos con franja de severidad ---------- */
+
+  .hallazgo {
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--rule-2);
+    padding: .95rem 1.15rem;
+    margin-bottom: .8rem;
+  }
+
+  .hallazgo[data-estado="resuelto"] { border-left-color: var(--green); }
+  .hallazgo[data-estado="abierto"]  { border-left-color: var(--orange); }
+  .hallazgo[data-estado="solido"]   { border-left-color: var(--red); }
+
+  .hallazgo h4 {
+    display: flex;
+    align-items: baseline;
+    gap: .7rem;
+    flex-wrap: wrap;
+    font: 500 1rem/1.35 var(--sans);
+    margin: 0 0 .35rem;
+    max-width: var(--measure);
+  }
+
+  .hallazgo p { margin: 0; font-size: .95rem; color: var(--fg-2); }
+  .hallazgo p + p { margin-top: .5rem; }
+
+  .marca {
+    font: 700 .6rem/1 var(--cond);
+    text-transform: uppercase;
+    letter-spacing: var(--track-wide);
+    padding: .28em .5em;
+    border: 1px solid currentColor;
+    white-space: nowrap;
+  }
+
+  .marca[data-tono="resuelto"] { color: var(--green); }
+  .marca[data-tono="abierto"]  { color: var(--orange); }
+  .marca[data-tono="solido"]   { color: var(--red); }
+
+  /* ---------- Tabla, con el estilo de la ficha ---------- */
+
+  .envoltorio-tabla { overflow-x: auto; margin: 1.2rem 0 1.5rem; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .92rem;
+    min-width: 34rem;
+  }
+
+  thead th {
+    text-align: left;
+    font: 700 .66rem/1.3 var(--cond);
+    text-transform: uppercase;
+    letter-spacing: var(--track-wide);
+    color: var(--fg-3);
+    padding: 0 .8rem .5rem 0;
+    border-bottom: 2px solid var(--rule-strong);
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: .62rem .8rem .62rem 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+    color: var(--fg-2);
+  }
+
+  tbody td:first-child { color: var(--fg-1); }
+  tbody tr:last-child td { border-bottom: none; }
+  .num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* ---------- Propuesta numerada: es una secuencia real ---------- */
+
+  .tanda {
+    display: grid;
+    grid-template-columns: 2.6rem 1fr;
+    gap: 0 1rem;
+    padding: 1.1rem 0;
+    border-top: 1px solid var(--rule);
+  }
+
+  .tanda:last-of-type { border-bottom: 1px solid var(--rule); }
+
+  .tanda > b {
+    font: 700 1.5rem/1 var(--cond);
+    font-variant-numeric: tabular-nums;
+    color: var(--red);
+  }
+
+  .tanda h3 { margin: 0 0 .3rem; }
+  .tanda p { margin: 0; color: var(--fg-2); font-size: .95rem; }
+  .tanda .esfuerzo {
+    display: block;
+    margin-top: .45rem;
+    font: 700 .64rem/1 var(--cond);
+    text-transform: uppercase;
+    letter-spacing: var(--track-wide);
+    color: var(--fg-3);
+  }
+
+  /* ---------- Nota al pie ---------- */
+
+  .pie {
+    margin-top: 4rem;
+    border-top: 1px solid var(--rule);
+    padding-top: 1rem;
+    font-size: .82rem;
+    color: var(--fg-3);
+    max-width: var(--measure);
+  }
+
+  .aviso {
+    background: var(--red-tenue);
+    border-left: 3px solid var(--red);
+    padding: .9rem 1.1rem;
+    margin: 1.3rem 0;
+    font-size: .95rem;
+  }
+  .aviso p { color: var(--fg-2); }
+  .aviso p:last-child { margin-bottom: 0; }
+</style>
+
+<div class="hoja">
+
+  <header>
+    <div class="rotulo">
+      <b>Diagnóstico</b>
+      <span>App de Fichas Técnicas · FAMIQ · 20 ago 2026</span>
+    </div>
+    <h1>Radiografía de<br>Fichas Técnicas</h1>
+    <p class="bajada">
+      El motor está bien construido y la carrocería estaba a medio terminar. Lo
+      que seguía era hacer que la app se pudiera usar con el catálogo real: buscar
+      entre miles de SKU, y editar una ficha viéndola en vez de imaginándola.
+    </p>
+  </header>
+
+  <section>
+    <h2>Veredicto</h2>
+
+    <dl class="veredicto">
+      <div class="cifra">
+        <dt>Base técnica</dt>
+        <dd>Sólida<small>El modelo de bloques y el historial append-only están bien resueltos y no hay que tocarlos.</small></dd>
+      </div>
+      <div class="cifra">
+        <dt>Lo que faltaba</dt>
+        <dd>La cabina<small>Navegación y edición. No era deuda técnica: era trabajo que no estaba hecho.</small></dd>
+      </div>
+      <div class="cifra">
+        <dt>Techo real</dt>
+        <dd>Lejos<small>Con el modelo actual, miles de fichas entran sin cambios de arquitectura.</small></dd>
+      </div>
+    </dl>
+
+    <p>
+      La parte difícil de este producto ya estaba bien hecha: los quince tipos de
+      bloque con su grilla de doce pistas, el historial que no se puede pisar ni
+      borrar, y una sola vista React que sirve a la pantalla y al PDF. Nada de eso
+      hay que rehacerlo, y es lo que hizo posible que la carga desde PDF funcione.
+    </p>
+    <p>
+      Lo que estaba flojo era todo lo que rodea a eso. Y la captura que me
+      mandaste no era una cuestión de gusto: era un bug de layout con dos causas
+      sumadas.
+    </p>
+  </section>
+
+  <section>
+    <h2>Diagnóstico</h2>
+
+    <div class="hallazgo" data-estado="resuelto">
+      <h4>La hoja se derramaba sobre el panel de bloques<span class="marca" data-tono="resuelto">Resuelto</span></h4>
+      <p>
+        Exactamente lo de tu captura. La hoja A4 mide 794 píxeles y la columna era
+        más angosta, así que se desbordaba hasta el punto donde se cortaban las
+        tarjetas. Y el preview estaba declarado a ancho completo de la grilla, así
+        que pintaba encima de lo que el panel lateral derramaba fuera de su fila.
+      </p>
+      <p>
+        Ahora la hoja vive en una columna con scroll propio y los paneles
+        scrollean solos. De paso tiene zoom, porque a tamaño real no entra en un
+        notebook.
+      </p>
+    </div>
+
+    <div class="hallazgo" data-estado="resuelto">
+      <h4>Las listas traían la tabla entera<span class="marca" data-tono="resuelto">Resuelto</span></h4>
+      <p>
+        Ni búsqueda, ni filtros, ni paginado. Con los productos de prueba ya era
+        una pared de filas; con tu catálogo real la pantalla no sirve y la consulta
+        crece sin techo. Era el problema más grave de todos y el más barato de
+        arreglar.
+      </p>
+    </div>
+
+    <div class="hallazgo" data-estado="resuelto">
+      <h4>Se editaba a ciegas<span class="marca" data-tono="resuelto">Resuelto</span></h4>
+      <p>
+        La vista previa nacía oculta y estaba abajo de un formulario largo:
+        escribías un campo y scrolleabas para ver el efecto. Reordenar era subir y
+        bajar de a un paso — mover el bloque quince al segundo lugar eran trece
+        clics. Y el ancho se elegía de un desplegable sin ver a qué correspondía.
+      </p>
+    </div>
+
+    <div class="hallazgo" data-estado="resuelto">
+      <h4>La hoja no se redibujaba al agregar un bloque<span class="marca" data-tono="resuelto">Resuelto</span></h4>
+      <p>
+        Un bug preexistente que nadie había notado, porque la vista previa nacía
+        oculta y se montaba de cero al abrirla. La pasada que vuelve a medir
+        cuando cargan las tipografías apagaba el medidor antes de que llegara al
+        DOM, así que no se montaba nunca y no se medía nunca.
+      </p>
+    </div>
+
+    <div class="hallazgo" data-estado="resuelto">
+      <h4>Tipear se sentía trabado<span class="marca" data-tono="resuelto">Resuelto</span></h4>
+      <p>
+        La hoja se repaginaba en cada tecla, remontando un medidor oculto que
+        dibuja cada bloque una segunda vez. Con quince bloques, eso por cada
+        carácter. Ahora la hoja alcanza 250 ms después de que dejás de escribir.
+      </p>
+    </div>
+
+    <div class="hallazgo" data-estado="resuelto">
+      <h4>Una familia con muchos assets cargaba lento<span class="marca" data-tono="resuelto">Resuelto</span></h4>
+      <p>
+        Las URL firmadas se pedían de a una, en serie, y cada pedido creaba un
+        cliente nuevo de Supabase. Cuarenta croquis eran cuarenta viajes
+        secuenciales en cada carga de la ficha. Ahora se firman todas juntas.
+      </p>
+    </div>
+
+    <div class="hallazgo" data-estado="resuelto">
+      <h4>Un producto sin familia dejaba huecos en la ficha<span class="marca" data-tono="resuelto">Resuelto</span></h4>
+      <p>
+        Otro bug preexistente. Los assets se resolvían sólo por familia, así que un
+        bloque que apuntaba a una imagen de otra familia — o de ninguna, como las
+        que salen de un PDF — no la mostraba. Lo encontré renderizando el PDF a
+        mano; los tests estaban en verde porque verificaban que el vínculo
+        quedara, no que la imagen se viera.
+      </p>
+    </div>
+
+    <div class="hallazgo" data-estado="resuelto">
+      <h4>Nada verificaba las reglas que el propio diseño exige<span class="marca" data-tono="resuelto">Resuelto</span></h4>
+      <p>
+        Se podía guardar una ficha con dos cabeceras, o una tabla de cotas sin la
+        nota que define sus símbolos, y el problema aparecía en el PDF que ve el
+        cliente. Ahora avisa antes de guardar, con un link al bloque. Avisa, no
+        bloquea: una ficha a medio cargar es un estado legítimo.
+      </p>
+    </div>
+
+    <div class="hallazgo" data-estado="abierto">
+      <h4>El revisor con IA todavía no se validó contra fichas reales<span class="marca" data-tono="abierto">Abierto</span></h4>
+      <p>
+        Está funcionando con Haiku, que detecta cuatro de los cinco criterios de
+        aceptación. Con una sola ficha real cargada no hay evidencia suficiente
+        para decidir si conviene subir a Sonnet. Se decide con datos, cuando haya
+        diez o quince fichas cargadas.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Escalabilidad</h2>
+
+    <p>
+      El modelo de datos aguanta. Los índices están donde tienen que estar y una
+      ficha completa pesa unos tres kilobytes de JSON, así que el volumen no es el
+      problema. Los límites reales son otros:
+    </p>
+
+    <div class="envoltorio-tabla">
+      <table>
+        <thead>
+          <tr>
+            <th>Qué</th>
+            <th>Medido</th>
+            <th>Dónde aprieta</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Peso de una ficha</td>
+            <td class="num">≈ 3 KB</td>
+            <td>Nunca. 5.000 fichas con 20 revisiones cada una son 300 MB.</td>
+          </tr>
+          <tr>
+            <td>Listas</td>
+            <td class="num">25 / página</td>
+            <td>Resuelto. Antes traía todo; ahora el servidor pide sólo la página.</td>
+          </tr>
+          <tr>
+            <td>Carga desde PDF</td>
+            <td class="num">35–37 s</td>
+            <td>El techo de Vercel Hobby son 60 s. Entra, con poco margen.</td>
+          </tr>
+          <tr>
+            <td>Export a PDF</td>
+            <td class="num">3 páginas exactas</td>
+            <td>Chromium en la función serverless. Es el riesgo declarado del proyecto.</td>
+          </tr>
+          <tr>
+            <td>Costo de IA</td>
+            <td class="num">≈ 10.700 tokens</td>
+            <td>Por ficha de tres hojas, con Haiku. Despreciable al volumen de FAMIQ.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="aviso">
+      <p>
+        <strong>El único límite que puede morder es el de los 60 segundos.</strong>
+        Medí la plantilla de tres hojas en 37 segundos, así que hay margen — pero
+        una ficha con muchos más bloques podría pasarse. Si eso ocurre, la salida
+        es partir el PDF por hoja o mover la extracción a un trabajo en segundo
+        plano. No subir el límite a ciegas.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Lo que hice anoche</h2>
+
+    <p>
+      Cuatro tandas, cada una con sus pruebas y ya en <code>main</code>. La suite
+      completa quedó en verde: 183 pruebas unitarias y 40 de punta a punta contra
+      Supabase real.
+    </p>
+
+    <div class="tanda">
+      <b>1</b>
+      <div>
+        <h3>Buscar, filtrar y paginar</h3>
+        <p>
+          Las dos listas ahora buscan por SKU o nombre, filtran por estado y por
+          familia, y paginan de 25. El estado vive en la URL, así que un filtro se
+          comparte por link. La tabla de productos muestra la familia, que hacía
+          falta para ver de un vistazo a qué producto le falta asignarla.
+        </p>
+        <span class="esfuerzo">Verificado contra la base: 81 fichas paginan, "STEELOX" devuelve 2</span>
+      </div>
+    </div>
+
+    <div class="tanda">
+      <b>2</b>
+      <div>
+        <h3>El editor en tres paneles</h3>
+        <p>
+          Los bloques y la paleta a la izquierda, la hoja al centro como lienzo, y
+          los campos del bloque elegido a la derecha. Clic en un bloque de la hoja
+          abre sus campos. Reordenar es arrastrar. El ancho se cambia tirando del
+          borde derecho y cae en la fracción de grilla más cercana. Arrastrar un
+          tipo de la paleta a la hoja lo inserta ahí; arrastrar una imagen de la
+          librería sobre un bloque se la asigna.
+        </p>
+        <span class="esfuerzo">La hoja se dibuja con el mismo componente que el PDF: el lienzo no puede mentir</span>
+      </div>
+    </div>
+
+    <div class="tanda">
+      <b>3</b>
+      <div>
+        <h3>Cotas sobre el croquis</h3>
+        <p>
+          Símbolos puestos encima de la imagen, en el punto que miden, colocados
+          arrastrándolos. Las coordenadas van en porcentaje, así que la marca cae en
+          el mismo punto del dibujo en pantalla, en el PDF y con el bloque a
+          cualquier ancho.
+        </p>
+        <span class="esfuerzo">Única libertad de posición del producto — y con su justificación escrita</span>
+      </div>
+    </div>
+
+    <div class="tanda">
+      <b>4</b>
+      <div>
+        <h3>Los bugs y el rendimiento</h3>
+        <p>
+          El desborde de la hoja, la hoja que no se redibujaba, la lentitud al
+          tipear, las URL firmadas en serie, los assets que no resolvían sin
+          familia, y los avisos previos a guardar.
+        </p>
+        <span class="esfuerzo">Dos de esos bugs eran preexistentes y nadie los había visto</span>
+      </div>
+    </div>
+
+    <div class="aviso">
+      <p>
+        <strong>Una aclaración sobre la estética invariante.</strong> Pediste
+        arrastrar y soltar, y eso podía romper la garantía de que el diseño no
+        deriva. No la rompe: lo único que se puede arrastrar es el orden de los
+        bloques y su ancho entre las cuatro fracciones de la grilla. Arrastrar es
+        una forma más directa de decir lo que ya se podía decir, no una libertad
+        nueva.
+      </p>
+      <p>
+        La excepción son las cotas sobre la imagen, donde la posición sí es libre.
+        Ahí lo que queda fijo es la apariencia: el tipo de letra, el cuerpo, el
+        color y el recuadro los fija el CSS y no hay ningún campo que los cambie.
+        Elegís dónde, nunca cómo se ve. Quedó escrito en el documento de diseño con
+        ese razonamiento, para que en seis meses nadie lo confunda con permiso para
+        tocar el resto.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Lo que propongo después</h2>
+
+    <p>
+      En orden de lo que más devuelve por el trabajo que cuesta. Ninguna de estas
+      está empezada.
+    </p>
+
+    <h3>Cargar el catálogo real y medir con eso</h3>
+    <p>
+      Es lo más importante y no es programar. Con una sola ficha cargada, todas las
+      decisiones que quedan — Haiku o Sonnet, si el filtro de imágenes acierta en
+      fichas de otras líneas, si los 60 segundos alcanzan — se están tomando sin
+      datos. Diez o quince fichas reales convierten esas discusiones en mediciones.
+    </p>
+
+    <h3>Atajos de teclado y paleta de comandos</h3>
+    <p>
+      Guardar con una combinación, insertar un bloque escribiendo su nombre, saltar
+      entre bloques con las flechas. Para alguien que carga fichas todo el día es
+      la diferencia entre usar la app y peleársela. Es trabajo acotado.
+    </p>
+
+    <h3>Deshacer y rehacer en el editor</h3>
+    <p>
+      Hoy un borrado accidental antes de guardar se pierde. El historial de
+      revisiones protege lo guardado, no lo que está en pantalla. Con arrastrar y
+      soltar esto pesa más que antes: es más fácil mover algo sin querer.
+    </p>
+
+    <h3>Duplicar una ficha entera</h3>
+    <p>
+      Ya se puede guardar una ficha como plantilla de familia, pero para una línea
+      de veinte medidas del mismo producto lo natural es partir de la ficha
+      anterior y cambiar la tabla dimensional.
+    </p>
+
+    <h3>Comparar dos fichas lado a lado</h3>
+    <p>
+      La pantalla de diff compara dos revisiones de la misma ficha. Comparar dos
+      fichas distintas de la misma familia serviría para detectar la incoherencia
+      antes de que llegue al cliente — que es justo lo que busca el revisor con IA,
+      pero entre documentos.
+    </p>
+
+    <h3>Fichas de tres hojas en segundo plano</h3>
+    <p>
+      Sólo si los 60 segundos empiezan a molestar. No lo haría antes de tener la
+      evidencia.
+    </p>
+  </section>
+
+  <section>
+    <h2>Lo que necesito de vos</h2>
+
+    <p>
+      Dos cosas concretas, y las dos son de cinco minutos:
+    </p>
+
+    <ul>
+      <li>
+        <strong>Correr <code>limpiar4.sql</code></strong>, que te dejé adjunto.
+        Barre los productos y familias de prueba que dejaron las corridas de test y
+        conserva el disco Steelox con su historial. Los archivos del bucket ya los
+        borré yo. Al final asigna la familia "Discos de corte" al producto real,
+        que es lo que hace que las imágenes sacadas de un PDF queden en su
+        librería y se reusen.
+      </li>
+      <li>
+        <strong>Cargar dos o tres fichas reales</strong> de líneas distintas —
+        idealmente una de válvulas y una de ferretería, no dos de discos. Con eso
+        puedo medir si el filtro de imágenes y el reconocimiento de bloques
+        aciertan fuera del caso que ya conozco.
+      </li>
+    </ul>
+
+    <p>
+      Y una pregunta abierta, para cuando la mires: de las seis propuestas de
+      arriba, ¿cuál te haría más falta el lunes? Puedo estar equivocado en el
+      orden.
+    </p>
+  </section>
+
+  <p class="pie">
+    Compuesto con la paleta y las tipografías del propio sistema de diseño de la
+    app — rojo FAMIQ, grafito y la familia Roboto — porque un informe sobre una
+    ficha técnica bien puede parecerse a una. Todos los números de este documento
+    salen de mediciones de anoche contra la base y los PDF de referencia, no de
+    estimaciones; donde no medí, lo digo.
+  </p>
+
+</div>
