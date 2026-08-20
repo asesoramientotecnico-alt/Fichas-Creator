@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { AnchoBloque, Bloque, TipoBloque } from "@/lib/tipos";
 import { TIPOS_DISPONIBLES, bloqueVacio, nuevoId } from "@/lib/bloques-nuevos";
 import { guardarRevision } from "@/app/acciones-ficha";
+import { subirAsset } from "@/app/acciones-assets";
 import { compararRevisiones, ETIQUETA_CLASE } from "@/lib/diff";
 import { revisarBloques } from "@/lib/validacion";
 import {
@@ -26,6 +27,19 @@ import { datosDeCabecera } from "@/lib/ficha-textos";
 import "./editor.css";
 
 const NOMBRE_TIPO = new Map(TIPOS_DISPONIBLES.map((t) => [t.tipo, t.nombre]));
+
+/** Una imagen que el filtro de la extracción descartó, tal como llega del endpoint. */
+interface ImagenDescartadaUI {
+  id: string;
+  hoja: number;
+  posicion: string;
+  motivo: string;
+  tipoMime: string;
+  extension: string;
+  dataUri: string;
+  /** Se llena cuando ya se subió: el botón deja de ofrecerse. */
+  assetId?: string;
+}
 
 /**
  * Editor de una ficha, en tres paneles: los bloques y la paleta a la izquierda,
@@ -68,6 +82,9 @@ export default function Editor({
   const [extrayendo, setExtrayendo] = useState(false);
   const [omitido, setOmitido] = useState<string[]>([]);
   const [resumenExtraccion, setResumenExtraccion] = useState<string | null>(null);
+  const [descartadas, setDescartadas] = useState<ImagenDescartadaUI[]>([]);
+  const [familiaId, setFamiliaId] = useState<string | null>(null);
+  const [rescatando, setRescatando] = useState<string | null>(null);
   const archivoPdf = useRef<HTMLInputElement>(null);
 
   // El lienzo repagina midiendo el DOM, así que encadenarlo a cada tecla hacía
@@ -183,6 +200,7 @@ export default function Editor({
     setError(null);
     setOmitido([]);
     setResumenExtraccion(null);
+    setDescartadas([]);
     try {
       const cuerpo = new FormData();
       cuerpo.append("pdf", archivo);
@@ -196,6 +214,8 @@ export default function Editor({
       setBloques(nuevos);
       setSeleccionado(nuevos[0]?.id ?? null);
       setOmitido((datos.omitido ?? []) as string[]);
+      setDescartadas((datos.descartadas ?? []) as ImagenDescartadaUI[]);
+      setFamiliaId((datos.familiaId ?? null) as string | null);
 
       const imagenes = (datos.imagenesUsadas ?? 0) as number;
       const partes = [`${nuevos.length} bloque(s)`];
@@ -215,6 +235,55 @@ export default function Editor({
     } finally {
       setExtrayendo(false);
       if (archivoPdf.current) archivoPdf.current.value = "";
+    }
+  };
+
+  /**
+   * Sube a la librería de la familia una imagen que el filtro había descartado.
+   *
+   * El filtro acierta con el logo y los fragmentos de glifo, pero también se
+   * lleva los pictogramas de seguridad, que ocupan 0,16% de la hoja. Bajar el
+   * umbral dejaría entrar la basura; mostrarlas y dejar que la persona rescate
+   * las que quería resuelve el caso sin ensuciar la librería.
+   */
+  const rescatar = async (d: ImagenDescartadaUI) => {
+    if (!familiaId) {
+      setError(
+        "Para guardar la imagen en una librería, el producto necesita una familia asignada.",
+      );
+      return;
+    }
+    setRescatando(d.id);
+    setError(null);
+    try {
+      const respuesta = await fetch(d.dataUri);
+      const blob = await respuesta.blob();
+      const cuerpo = new FormData();
+      cuerpo.append("familia_id", familiaId);
+      // Entran como croquis: son dibujos, no fotos de producto. Se puede
+      // cambiar después desde la pantalla de la familia.
+      cuerpo.append("tipo", "croquis");
+      cuerpo.append("alt", `Del PDF: hoja ${d.hoja}, ${d.posicion}`);
+      cuerpo.append(
+        "archivo",
+        new File([blob], `${d.id}.${d.extension}`, { type: d.tipoMime }),
+      );
+
+      const r = await subirAsset(null, cuerpo);
+      if (r.error) {
+        setError(r.error);
+        return;
+      }
+      setDescartadas((previas) =>
+        previas.map((p) => (p.id === d.id ? { ...p, assetId: r.assetId } : p)),
+      );
+      // La librería que ve el inspector la trae el servidor: hay que refrescar
+      // para poder elegir la imagen recién subida.
+      router.refresh();
+    } catch {
+      setError("No pudimos guardar la imagen en la librería.");
+    } finally {
+      setRescatando(null);
     }
   };
 
@@ -284,6 +353,42 @@ export default function Editor({
               <li key={i}>{o}</li>
             ))}
           </ul>
+        </div>
+      ) : null}
+
+      {descartadas.length > 0 ? (
+        <div className="descartadas">
+          <h3>Imágenes del PDF que el filtro descartó</h3>
+          <p className="paleta-vacia">
+            Son las que parecen cromo por su tamaño —el logo, fragmentos de
+            letra— pero también caen acá los pictogramas de seguridad. Agregá a
+            la librería las que quieras usar y después arrastralas sobre la hoja
+            como marca.
+          </p>
+          <div className="descartadas-grilla">
+            {descartadas.map((d) => (
+              <figure key={d.id} className="descartada">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={d.dataUri} alt={`${d.posicion}, hoja ${d.hoja}`} />
+                <figcaption>
+                  hoja {d.hoja} · {d.motivo}
+                </figcaption>
+                {d.assetId ? (
+                  <span className="descartada-lista">En la librería</span>
+                ) : (
+                  <button
+                    type="button"
+                    className="boton"
+                    data-variante="secundario"
+                    disabled={rescatando === d.id}
+                    onClick={() => void rescatar(d)}
+                  >
+                    {rescatando === d.id ? "Guardando…" : "Agregar a la librería"}
+                  </button>
+                )}
+              </figure>
+            ))}
+          </div>
         </div>
       ) : null}
 

@@ -93,9 +93,13 @@ test("un PDF se transcribe a bloques y queda como borrador sin guardar", async (
   expect(despues.length).toBe(2);
   expect(despues.find((r: { n: number }) => r.n === 2).bloques.length).toBe(bloques);
 
-  // Y la ficha renderiza con ese contenido.
+  // Y la ficha renderiza con ese contenido. Se mira el primer título: cuántos
+  // bloques emite el modelo varía entre corridas, y alguna vez transcribe dos
+  // cabeceras — que la app avisa antes de guardar, pero no impide.
   await page.waitForSelector(".hoja:not([data-medir-hoja])", { timeout: 20_000 });
-  await expect(page.locator(".hoja:not([data-medir-hoja]) h1")).toContainText(/STEELOX/i);
+  await expect(page.locator(".hoja:not([data-medir-hoja]) h1").first()).toContainText(
+    /STEELOX/i,
+  );
 });
 
 test("el contenido que no entra en un bloque se informa, no se descarta en silencio", async ({ page }) => {

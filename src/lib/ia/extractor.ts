@@ -3,9 +3,10 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 import type { AnchoBloque, AssetTipo, Bloque } from "@/lib/tipos";
 import {
+  analizarImagenes,
   describirImagen,
-  imagenesDePdf,
   inventarioParaModelo,
+  type ImagenDescartada,
   type ImagenExtraida,
 } from "@/lib/pdf/imagenes";
 
@@ -605,6 +606,22 @@ export interface ResultadoExtraccion {
   descartados: number;
   /** Cuántas imágenes del PDF quedaron asignadas a un bloque. */
   imagenesUsadas: number;
+  /**
+   * Las imágenes que el filtro de cromo descartó, con su motivo y su recorte.
+   * Se devuelven para que la persona pueda rescatar las que sí quería —los
+   * pictogramas de seguridad son el caso— en vez de tener que buscarlas en el
+   * PDF y subirlas a mano.
+   */
+  descartadas: {
+    id: string;
+    hoja: number;
+    posicion: string;
+    motivo: string;
+    tipoMime: string;
+    extension: string;
+    /** El recorte en data URI, para mostrarlo y para poder subirlo. */
+    dataUri: string;
+  }[];
   uso?: { entrada: number; salida: number };
 }
 
@@ -683,8 +700,11 @@ export async function extraerDePdf(
   // objetos embebidos con su rectángulo de colocación. Si el PDF no tiene
   // ninguna, el inventario va vacío y el flujo es el de antes.
   let inventario: ImagenExtraida[] = [];
+  let descartadas: ImagenDescartada[] = [];
   try {
-    inventario = await imagenesDePdf(pdf);
+    const analisis = await analizarImagenes(pdf);
+    inventario = analisis.contenido;
+    descartadas = analisis.descartadas;
   } catch (e) {
     // Un PDF del que no se pueden leer las imágenes igual se transcribe: el
     // texto es lo principal y los bloques quedan sin imagen, como antes.
@@ -744,6 +764,15 @@ export async function extraerDePdf(
     ],
     descartados: resultado.data.bloques.length - bloques.length,
     imagenesUsadas: subidas.size,
+    descartadas: descartadas.map((d) => ({
+      id: d.id,
+      hoja: d.hoja,
+      posicion: d.posicion,
+      motivo: d.motivo,
+      tipoMime: d.tipoMime,
+      extension: d.extension,
+      dataUri: `data:${d.tipoMime};base64,${Buffer.from(d.bytes).toString("base64")}`,
+    })),
     uso,
   };
 }

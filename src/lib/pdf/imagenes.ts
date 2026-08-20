@@ -116,7 +116,23 @@ function describirPosicion(im: Cruda): string {
  * resuelve después y sin heurística: sólo se sube lo que el modelo asigna a un
  * bloque, y lo que queda sin asignar se le informa a la persona.
  */
-export async function imagenesDePdf(pdf: Uint8Array): Promise<ImagenExtraida[]> {
+/** Una imagen que el filtro descartó, con el motivo, para poder rescatarla. */
+export interface ImagenDescartada extends ImagenExtraida {
+  motivo: string;
+}
+
+/**
+ * Las imágenes de contenido y las que el filtro descartó.
+ *
+ * Las descartadas se devuelven porque el filtro acierta con el cromo pero
+ * también se lleva cosas que la persona sí quiere: los pictogramas de seguridad
+ * de la ficha del disco ocupan 0,16% de la hoja y caen del lado del logo. En vez
+ * de ajustar el umbral —que dejaría entrar los fragmentos de glifo— se le
+ * muestran para que decida.
+ */
+export async function analizarImagenes(
+  pdf: Uint8Array,
+): Promise<{ contenido: ImagenExtraida[]; descartadas: ImagenDescartada[] }> {
   // Import diferido: mupdf usa top-level await y arrastra 10 MB de WASM. Así
   // sólo se carga cuando hay un PDF del que leer imágenes, y los módulos que
   // importan el extractor no pagan el costo en cada arranque en frío.
@@ -177,22 +193,33 @@ export async function imagenesDePdf(pdf: Uint8Array): Promise<ImagenExtraida[]> 
   }
 
   const sobrevivientes: Cruda[] = [];
+  const rechazadas: { im: Cruda; motivo: string }[] = [];
   const yaVista = new Set<string>();
   for (const im of crudas) {
-    if (hojas > 1 && hojasPorHash.get(im.hash)!.size === hojas) continue;
-    if (im.fraccion < AREA_MINIMA) continue;
-    if (Math.max(im.anchoOrigenPx, im.altoOrigenPx) < LADO_MINIMO) continue;
-    const proporcion = Math.max(im.anchoPt / im.altoPt, im.altoPt / im.anchoPt);
-    if (proporcion > PROPORCION_MAXIMA) continue;
-    // La misma imagen colocada dos veces se ofrece una sola vez.
+    // La misma imagen colocada dos veces se ofrece una sola vez, y su segunda
+    // aparición no se informa como descartada: es la misma.
     if (yaVista.has(im.hash)) continue;
+
+    const proporcion = Math.max(im.anchoPt / im.altoPt, im.altoPt / im.anchoPt);
+    let motivo: string | null = null;
+    if (hojas > 1 && hojasPorHash.get(im.hash)!.size === hojas) {
+      motivo = "está en todas las hojas: es el logo o la píldora";
+    } else if (im.fraccion < AREA_MINIMA) {
+      motivo = `ocupa ${(100 * im.fraccion).toFixed(2)}% de la hoja`;
+    } else if (Math.max(im.anchoOrigenPx, im.altoOrigenPx) < LADO_MINIMO) {
+      motivo = `mide ${im.anchoOrigenPx}×${im.altoOrigenPx} px`;
+    } else if (proporcion > PROPORCION_MAXIMA) {
+      motivo = `proporción ${proporcion.toFixed(1)}:1`;
+    }
+
     yaVista.add(im.hash);
-    sobrevivientes.push(im);
+    if (motivo) rechazadas.push({ im, motivo });
+    else sobrevivientes.push(im);
   }
 
-  // Pasada 2: el recorte de cada región que quedó.
-  const contenido: ImagenExtraida[] = [];
-  for (const im of sobrevivientes) {
+  // Pasada 2: el recorte de cada región. Se renderizan también las
+  // descartadas, que son chicas y baratas, para poder mostrarlas.
+  const recortar = (im: Cruda, id: string): ImagenExtraida => {
     const pagina = documento.loadPage(im.indiceHoja);
     const dpi = Math.min(
       DPI_MAXIMO,
@@ -216,8 +243,8 @@ export async function imagenesDePdf(pdf: Uint8Array): Promise<ImagenExtraida[]> 
 
     const { bytes, extension, tipoMime } = mejorFormato(pixmap);
 
-    contenido.push({
-      id: `imagen${contenido.length + 1}`,
+    return {
+      id,
       hoja: im.hoja,
       posicion: describirPosicion(im),
       anchoPt: Math.round(im.anchoPt),
@@ -230,10 +257,21 @@ export async function imagenesDePdf(pdf: Uint8Array): Promise<ImagenExtraida[]> 
       tipoMime,
       bytes,
       hash: im.hash,
-    });
-  }
+    };
+  };
 
-  return contenido;
+  const contenido = sobrevivientes.map((im, i) => recortar(im, `imagen${i + 1}`));
+  const descartadas = rechazadas.map(({ im, motivo }, i) => ({
+    ...recortar(im, `descartada${i + 1}`),
+    motivo,
+  }));
+
+  return { contenido, descartadas };
+}
+
+/** Sólo las imágenes de contenido. Es lo que consume el inventario del modelo. */
+export async function imagenesDePdf(pdf: Uint8Array): Promise<ImagenExtraida[]> {
+  return (await analizarImagenes(pdf)).contenido;
 }
 
 /**

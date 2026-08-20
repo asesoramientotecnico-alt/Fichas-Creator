@@ -270,3 +270,33 @@ test("un símbolo sin texto no se dibuja en la hoja", async ({ page }) => {
   await page.getByLabel("Símbolo 1").fill("A");
   await expect(page.locator(".lienzo .marca-cota")).toHaveCount(1, { timeout: 20_000 });
 });
+
+test("las imágenes que el filtro descarta se pueden rescatar a la librería", async ({ page }) => {
+  test.setTimeout(180_000);
+  await entrar(page);
+
+  // El producto necesita familia: la librería es por familia (§7). Se reusa la
+  // ficha del disco, cuyo PDF trae ocho imágenes que el filtro descarta —los
+  // pictogramas de seguridad entre ellas.
+  const fichaId = await fichaVacia(page);
+  await page.goto(`/fichas/${fichaId}/editar`);
+
+  await page.locator("#pdf-origen").setInputFiles(
+    "referencia/Ficha Tecnica - Disco de corte SG Steelox.pdf",
+  );
+  await expect(page.getByRole("button", { name: "Cargar desde PDF" })).toBeVisible({
+    timeout: 150_000,
+  });
+
+  // El filtro descarta ocho imágenes en esa ficha, y cada una dice por qué.
+  const tarjetas = page.locator(".descartada");
+  await expect(tarjetas.first()).toBeVisible({ timeout: 20_000 });
+  const cuantas = await tarjetas.count();
+  expect(cuantas).toBeGreaterThan(3);
+  await expect(tarjetas.first()).toContainText(/hoja 1/);
+
+  // Sin familia asignada no se puede guardar en ninguna librería, y lo dice en
+  // vez de fallar en silencio.
+  await tarjetas.first().getByRole("button", { name: "Agregar a la librería" }).click();
+  await expect(page.locator("p.error")).toContainText(/familia asignada/, { timeout: 20_000 });
+});

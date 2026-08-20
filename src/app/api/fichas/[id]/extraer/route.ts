@@ -76,7 +76,7 @@ export async function POST(
     const bytes = new Uint8Array(await archivo.arrayBuffer());
     const familiaId = ficha.producto?.familia_id ?? null;
 
-    const { bloques, omitido, descartados, imagenesUsadas, uso } = await extraerDePdf(
+    const { bloques, omitido, descartados, imagenesUsadas, descartadas, uso } = await extraerDePdf(
       bytes,
       undefined,
       (imagenes) => subirImagenesExtraidas(supabase, familiaId, imagenes),
@@ -96,7 +96,17 @@ export async function POST(
         ? "El producto no tiene familia asignada, así que las imágenes no quedaron en ninguna librería para reusar."
         : undefined;
 
-    return NextResponse.json({ bloques, omitido, imagenesUsadas, aviso, uso });
+    return NextResponse.json({
+      bloques,
+      omitido,
+      imagenesUsadas,
+      // El filtro de cromo se lleva también los pictogramas: se devuelven con
+      // su recorte para que la persona rescate los que quería.
+      descartadas,
+      familiaId,
+      aviso,
+      uso,
+    });
   } catch (e) {
     if (e instanceof ErrorExtraccion) {
       return NextResponse.json({ error: e.message }, { status: 422 });

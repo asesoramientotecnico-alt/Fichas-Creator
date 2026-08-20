@@ -223,6 +223,11 @@ borradores que Oficina Técnica arma en Word o InDesign antes de cargarlos.
   columna— con un valor por omisión fijo. Existe por un caso real: el modelo devolvió `orientacion`
   fuera del enum en los ocho bloques de una ficha y se descartaba la transcripción completa. Un
   campo de contenido nunca se completa ni se adivina; para eso está la regla 2.
+- Las imágenes que el filtro descarta se devuelven con su recorte y su motivo, y el editor ofrece
+  agregarlas a la librería. El filtro acierta con el logo y los fragmentos de glifo, pero también se
+  lleva los pictogramas de seguridad, que ocupan 0,16% de la hoja: bajar el umbral dejaría entrar la
+  basura, así que se muestran y decide la persona. Rescatada una, se coloca sobre la hoja como marca
+  con imagen (§4, `marcas`).
 - `src/lib/pdf/subir-imagenes.ts` — sube a la librería de la familia lo asignado. El hash del
   contenido va en el nombre del archivo y es la clave de deduplicación.
 - `POST /api/fichas/[id]/extraer` — recibe el PDF, devuelve bloques. No toca `ficha_revision`; lo

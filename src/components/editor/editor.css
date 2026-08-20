@@ -433,3 +433,48 @@ textarea { resize: vertical; min-height: 4.5em; }
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
 }
+
+/* Imágenes que la extracción descartó, para rescatar las que sí se querían. */
+.descartadas {
+  background: var(--bg-1);
+  border: 1px solid var(--border-1);
+  border-left: 3px solid var(--famiq-orange);
+  padding: var(--space-4);
+}
+
+.descartadas-grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.descartada {
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+  justify-items: center;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-1);
+  padding: var(--space-2);
+  background: #fff;
+}
+
+.descartada img { max-width: 100%; height: 3.4rem; object-fit: contain; }
+
+.descartada figcaption {
+  font-size: var(--fs-micro);
+  color: var(--fg-3);
+  text-align: center;
+  line-height: 1.25;
+}
+
+.descartada .boton { width: 100%; font-size: var(--fs-micro); }
+
+.descartada-lista {
+  font-family: var(--font-condensed);
+  font-size: var(--fs-micro);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--famiq-green);
+}
