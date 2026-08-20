@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { AnchoBloque, Bloque } from "@/lib/tipos";
 import { anchoDe } from "@/lib/paginado";
@@ -46,6 +46,9 @@ export default function Editor({
   const [error, setError] = useState<string | null>(null);
   const [guardando, iniciarGuardado] = useTransition();
   const [verPrevia, setVerPrevia] = useState(false);
+  const [extrayendo, setExtrayendo] = useState(false);
+  const [omitido, setOmitido] = useState<string[]>([]);
+  const archivoPdf = useRef<HTMLInputElement>(null);
 
   // El diff contra la revisión cargada muestra en vivo qué se va a registrar.
   const diff = useMemo(
@@ -70,6 +73,46 @@ export default function Editor({
       pildoraAlt: cabecera.pildoraAlt ?? datosFicha.pildoraAlt,
     };
   }, [bloques, assets, datosFicha]);
+
+  /**
+   * Transcribe un PDF a bloques y los carga en el editor SIN guardar: el
+   * borrador queda para revisar, y la revisión la crea la persona al guardar.
+   * Reemplaza lo que haya en pantalla, así que se pide confirmación si ya hay
+   * bloques cargados.
+   */
+  const extraerDesdePdf = async (archivo: File) => {
+    if (
+      bloques.length > 0 &&
+      !window.confirm(
+        `La ficha ya tiene ${bloques.length} bloque(s) en pantalla. ` +
+          "Cargar el PDF los reemplaza. ¿Seguimos?",
+      )
+    ) {
+      return;
+    }
+
+    setExtrayendo(true);
+    setError(null);
+    setOmitido([]);
+    try {
+      const cuerpo = new FormData();
+      cuerpo.append("pdf", archivo);
+      const r = await fetch(`/api/fichas/${fichaId}/extraer`, { method: "POST", body: cuerpo });
+      const datos = await r.json();
+      if (!r.ok) {
+        setError(datos.error ?? "No pudimos leer el PDF.");
+        return;
+      }
+      setBloques(datos.bloques as Bloque[]);
+      setOmitido((datos.omitido ?? []) as string[]);
+      if (!comentario) setComentario(`Carga desde PDF: ${archivo.name}`);
+    } catch {
+      setError("No pudimos leer el PDF. Revisá la conexión y volvé a intentar.");
+    } finally {
+      setExtrayendo(false);
+      if (archivoPdf.current) archivoPdf.current.value = "";
+    }
+  };
 
   const mover = (indice: number, delta: number) => {
     const destino = indice + delta;
@@ -155,6 +198,44 @@ export default function Editor({
       </div>
 
       <aside className="editor-panel">
+        <div>
+          <h2>Cargar desde PDF</h2>
+          <p style={{ fontSize: "var(--fs-micro)", color: "var(--fg-3)", margin: "var(--space-2) 0" }}>
+            Transcribe un PDF de ficha a bloques. No guarda nada: el resultado
+            queda en pantalla para que lo revises antes de crear la revisión.
+          </p>
+          <input
+            ref={archivoPdf}
+            id="pdf-origen"
+            type="file"
+            accept="application/pdf"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const archivo = e.target.files?.[0];
+              if (archivo) void extraerDesdePdf(archivo);
+            }}
+          />
+          <button
+            type="button"
+            className="boton"
+            data-variante="secundario"
+            disabled={extrayendo || guardando}
+            onClick={() => archivoPdf.current?.click()}
+          >
+            {extrayendo ? "Leyendo el PDF…" : "Elegir PDF…"}
+          </button>
+          {omitido.length > 0 ? (
+            <div className="aviso" style={{ marginTop: "var(--space-3)" }}>
+              <strong>No se transcribió:</strong>
+              <ul style={{ margin: "var(--space-2) 0 0", paddingLeft: "1.1rem" }}>
+                {omitido.map((o, i) => (
+                  <li key={i}>{o}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+
         <div>
           <h2>Agregar bloque</h2>
           <div style={{ display: "grid", gap: "var(--space-2)", marginTop: "var(--space-3)" }}>

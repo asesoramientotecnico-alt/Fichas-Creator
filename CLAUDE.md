@@ -21,16 +21,28 @@ Tres requisitos que definen el producto:
    usuario.
 2. **Toda corrección queda registrada.** Quién, cuándo, qué cambió. Historial auditable, no un
    `updated_at`.
-3. **Botón de revisión con IA.** La IA revisa y propone mejoras sobre contenido ya cargado por una
-   persona. No extrae, no completa, no inventa.
+3. **Botón de revisión con IA.** La IA revisa y propone mejoras sobre contenido ya cargado. No
+   completa, no inventa.
+4. **Carga de una ficha desde su PDF.** Un borrador en PDF se transcribe a bloques (§4bis). Es
+   trabajo mecánico de tipeo, y ninguna transcripción entra al historial sin que una persona la
+   apruebe.
 
 ### Fuera de alcance (v1)
 
 - Detección automática de familia por similitud. Las familias se guardan manualmente como plantilla.
 - Generación de croquis técnicos por IA desde cero (ver §7).
 - Catálogo unificado multi-ficha.
-- Extracción de tablas dimensionales desde PDFs de normas.
+- Extracción de tablas dimensionales desde PDFs de **normas** (una norma es un documento de decenas
+  de páginas con tablas que no son la ficha; transcribir un borrador de ficha de una o tres páginas,
+  que sí está en alcance, es otro problema — ver §4bis).
+- Extracción de las imágenes del PDF. Se transcribe el texto y se deja el bloque de imagen apuntando
+  a nada, con su descripción; la imagen se elige de la librería de la familia (§7).
 - Integración con SAP.
+
+> **Cambio de alcance, agosto 2026.** "Extracción desde PDF" estaba fuera de alcance completo. El
+> pedido de Oficina Técnica fue explícito: cargar el PDF y que la app arme la ficha, con ajustes
+> posteriores a mano. Se acotó a lo que no arriesga el requisito 2 —transcribir un borrador de ficha,
+> sin guardar— y se implementó como §4bis.
 
 ---
 
@@ -116,6 +128,47 @@ Reglas:
   de esas 12 —`un-tercio` (4), `medio` (6), `dos-tercios` (8), `completo` (12)— y nada más. Un
   bloque alto puede declarar `filasGrilla: 2` para que los dos bloques que lo siguen se apilen a su
   costado.
+
+---
+
+## 4bis. Carga de una ficha desde su PDF
+
+Botón **"Cargar desde PDF"** en el editor. Sube un PDF de ficha ya maquetada y la transcribe al array
+de bloques de §4.
+
+Es el flujo inverso al PDF de §8 M4: ahí la app dibuja una ficha a partir de bloques; acá lee una
+ficha dibujada y recupera los bloques. Sirve para el catálogo que ya existe en PDF y para los
+borradores que Oficina Técnica arma en Word o InDesign antes de cargarlos.
+
+### Reglas duras
+
+1. **NO GUARDA.** El resultado se carga en el editor como borrador, sin tocar la base. La revisión la
+   crea la persona al apretar guardar. `ficha_revision` sigue teniendo únicamente cambios que alguien
+   aprobó, que es el requisito 2 de §1 — la transcripción ahorra tipeo, no reemplaza la revisión
+   humana.
+2. **NO INVENTA.** Si un dato no está en el PDF, el campo queda vacío. Misma regla que §6.1 y por el
+   mismo motivo: un campo vacío se ve y se corrige, un dato plausible no lo cuestiona nadie.
+3. **NO CORRIGE.** Un error de tipeo o una norma mal atribuida se transcriben tal cual. Corregir es
+   tarea del revisor (§6) y de la persona, con su rastro en el historial. Una transcripción que
+   corrige hace desaparecer el error sin que nadie lo haya decidido.
+4. **Lo que no entra en un bloque se informa.** Pictogramas, sellos, iconos sin texto: van a una
+   lista "no se transcribió" que se le muestra a la persona. No se fuerzan dentro de un bloque ni se
+   descartan en silencio.
+5. **Las imágenes no se extraen.** El modelo no sube archivos. Los bloques con imagen salen sin
+   `assetId` y con un `alt` que describe qué imagen va ahí; la persona la elige de la librería de la
+   familia (§7).
+
+### Implementación
+
+- `src/lib/ia/extractor.ts` — prompt y schema. El schema es **una sola forma plana** para los
+  catorce tipos transcribibles, no una unión discriminada: con la unión, la API rechaza el pedido
+  porque la gramática compilada de los structured outputs se vuelve demasiado grande. El modelo llena
+  los campos que aplican y `aBloques` los traduce al bloque real, descartando lo que venga vacío.
+- `POST /api/fichas/[id]/extraer` — recibe el PDF, devuelve bloques. No escribe en la base.
+- `chart` queda afuera: sus series son datos numéricos y el SVG lo dibuja el servidor (§7).
+
+Modelo: `ANTHROPIC_MODELO_EXTRACCION`, y si no está, el mismo del revisor. Medido con Haiku sobre una
+ficha de una hoja: ~30 s y ~5.500 tokens de entrada.
 
 ---
 
@@ -247,3 +300,6 @@ familia. Bloque `chart`.
 | Deriva estética por agregado de tipos de bloque ad hoc | §4: agregar tipo es decisión de producto, con entrada en la tabla |
 | La IA "mejora" datos técnicos correctos | §6 regla 1 y prioridad 5. Fixture de test con la ficha de referencia |
 | Sobre-ingeniería del modelo de datos | Este documento ya recortó el alcance respecto de diseños previos. No reintroducir extracción de normas ni schemas por familia |
+| La transcripción del PDF mete un dato que el PDF no dice | §4bis reglas 2 y 3. La transcripción no se guarda: queda en el editor para revisar. `scripts/extractor.test.ts` cubre el descarte de bloques vacíos |
+| Se confía en la transcripción y nadie la revisa | El estado nace `borrador`, así que el PDF sale con marca de agua hasta que alguien lo apruebe (§5 invariante 4). Lo no transcripto se muestra en pantalla, no en un log |
+| La extracción de una ficha de tres hojas no entra en los 60 s de Vercel Hobby | Medido: una hoja ~30 s. Si pasa, partir el PDF o mover la extracción a un trabajo asincrónico — no subir `maxDuration` a ciegas |
