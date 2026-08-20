@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="886" height="154" viewBox="0 0 886 154"><rect x="0" y="0" width="886" height="154" rx="77.0" ry="77.0" fill="#7EB2DC"/>
+    <path d="M 84.0 38.36 C 60.08 69.64, 60.08 89.88, 84.0 89.88
+             C 107.92 89.88, 107.92 69.64, 84.0 38.36Z"
+          fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M 63.760000000000005 95.4 L 63.760000000000005 111.96000000000001
+             Q 63.760000000000005 123.0 76.64 123.0
+             L 91.36 123.0
+             Q 104.24 123.0 104.24 111.96000000000001
+             L 104.24 102.75999999999999"
+          fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>
+    <text x="156" y="77.0" dominant-baseline="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="34" fill="#FFFFFF">Conducción de Fluidos Sanitarios</text></svg>

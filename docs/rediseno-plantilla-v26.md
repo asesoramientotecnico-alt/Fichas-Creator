@@ -142,6 +142,17 @@ compartir familia, y viceversa. Por eso no se sube como asset de familia (§7):
 vive en `src/lib/unidades-negocio.ts`, un catálogo fijo de 6 unidades con su
 imagen embebida en el repo, igual que el logo.
 
+De esas 6, sólo "Conducción de Fluidos Industriales" es un asset real,
+extraído de la plantilla V26. Las otras cinco (Arquitectura & Construcción,
+Consumibles Industriales, Ferretería & Afines, Conducción de Fluidos
+Sanitarios, Materias Primas) el usuario las pegó en el chat, y en este
+entorno un paste inline no llega al disco — sólo lo que se adjunta como
+archivo. Como no hay forma de extraer los píxeles originales, se recrearon
+como SVG con el mismo estilo (píldora de color + ícono blanco + texto
+blanco), aproximando color e ícono a ojo desde lo que se ve en el chat.
+Quedan en la misma ruta fija (`public/ficha/unidades-negocio/*.svg`): el día
+que aparezcan los archivos reales, reemplazarlos ahí no toca ningún código.
+
 Esto también dejó al descubierto un bug preexistente: `BloqueHeader.familia`
 y `.subfamilia` se editaban en el formulario del bloque header desde M3, pero
 ningún componente los leía — la línea gris de la cabecera salía de

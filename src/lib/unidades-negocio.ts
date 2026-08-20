@@ -21,17 +21,17 @@ export const UNIDADES_NEGOCIO: UnidadNegocio[] = [
   {
     id: "arquitectura-construccion",
     nombre: "Arquitectura & Construcción",
-    archivo: "/ficha/unidades-negocio/arquitectura-construccion.png",
+    archivo: "/ficha/unidades-negocio/arquitectura-construccion.svg",
   },
   {
     id: "consumibles-industriales",
     nombre: "Consumibles Industriales",
-    archivo: "/ficha/unidades-negocio/consumibles-industriales.png",
+    archivo: "/ficha/unidades-negocio/consumibles-industriales.svg",
   },
   {
     id: "ferreteria-afines",
     nombre: "Ferretería & Afines",
-    archivo: "/ficha/unidades-negocio/ferreteria-afines.png",
+    archivo: "/ficha/unidades-negocio/ferreteria-afines.svg",
   },
   {
     id: "fluidos-industriales",
@@ -41,12 +41,12 @@ export const UNIDADES_NEGOCIO: UnidadNegocio[] = [
   {
     id: "fluidos-sanitarios",
     nombre: "Conducción de Fluidos Sanitarios",
-    archivo: "/ficha/unidades-negocio/fluidos-sanitarios.png",
+    archivo: "/ficha/unidades-negocio/fluidos-sanitarios.svg",
   },
   {
     id: "materias-primas",
     nombre: "Materias Primas",
-    archivo: "/ficha/unidades-negocio/materias-primas.png",
+    archivo: "/ficha/unidades-negocio/materias-primas.svg",
   },
 ];
 
