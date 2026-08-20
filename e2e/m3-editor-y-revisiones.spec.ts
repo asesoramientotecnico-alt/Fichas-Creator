@@ -74,7 +74,7 @@ test("editar crea revisiones y el diff reconstruye el cambio", async ({ page }) 
 
 test("una revisión sin comentario no se puede guardar", async ({ page }) => {
   await entrar(page);
-  await page.goto("/");
+  await page.goto("/?q=Tuerca+de+prueba+M3");
   await page.getByRole("link", { name: "Tuerca de prueba M3" }).first().click();
   await expect(page).toHaveURL(/\/fichas\/[0-9a-f-]{36}$/, { timeout: 20_000 });
 
@@ -88,7 +88,7 @@ test("una revisión sin comentario no se puede guardar", async ({ page }) => {
 
 test("los estados sólo avanzan por transiciones válidas", async ({ page }) => {
   await entrar(page);
-  await page.goto("/");
+  await page.goto("/?q=Tuerca+de+prueba+M3");
   await page.getByRole("link", { name: "Tuerca de prueba M3" }).first().click();
 
   // Desde borrador sólo se puede pasar a en revisión.

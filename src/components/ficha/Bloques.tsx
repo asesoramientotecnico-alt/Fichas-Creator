@@ -15,6 +15,7 @@ import type {
   BloqueListaComponentes,
   BloqueTablaAncha,
   BloqueCodigos,
+  MarcaCota,
 } from "@/lib/tipos";
 import { generarChartSvg, seriesATabla } from "@/lib/chart";
 
@@ -27,6 +28,33 @@ import { generarChartSvg, seriesATabla } from "@/lib/chart";
 /** Filas de la grilla que ocupa el bloque, si ocupa más de una. */
 function filasDe(bloque: { filasGrilla?: number }): string | undefined {
   return bloque.filasGrilla && bloque.filasGrilla > 1 ? String(bloque.filasGrilla) : undefined;
+}
+
+/**
+ * Los símbolos de cota colocados sobre una imagen.
+ *
+ * La posición viene del bloque en porcentaje; la apariencia la fija el CSS y no
+ * hay forma de cambiarla desde el contenido. Cada marca lleva su índice en un
+ * atributo para que el editor pueda arrastrarla; en el PDF el atributo es
+ * inerte.
+ */
+function MarcasDeCota({ marcas }: { marcas?: MarcaCota[] }) {
+  const conSimbolo = (marcas ?? []).filter((m) => m.simbolo.trim());
+  if (conSimbolo.length === 0) return null;
+  return (
+    <div className="marcas-cota">
+      {conSimbolo.map((m, i) => (
+        <span
+          className="marca-cota"
+          key={i}
+          data-marca-indice={i}
+          style={{ left: `${m.x}%`, top: `${m.y}%` }}
+        >
+          {m.simbolo}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 function Etiqueta({ children, tono }: { children: string; tono?: "gris" }) {
@@ -177,12 +205,15 @@ export function Croquis({ bloque, src }: { bloque: BloqueCroquis; src?: string }
     <section className="bloque bloque-croquis"
       data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "completo"}>
       <div className="marco">
-        {src ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={src} alt="Croquis dimensional" />
-        ) : (
-          <div aria-hidden="true" />
-        )}
+        <div className="lienzo-cotas">
+          {src ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={src} alt="Croquis dimensional" />
+          ) : (
+            <div aria-hidden="true" />
+          )}
+          <MarcasDeCota marcas={bloque.marcas} />
+        </div>
         <div className="cotas">
           {bloque.cotas.map((cota, i) => (
             <div className="cota" key={i}>
@@ -257,12 +288,15 @@ export function Imagen({ bloque, src }: { bloque: BloqueImagen; src?: string }) 
         <Encabezado etiqueta={bloque.etiqueta} sufijo={bloque.sufijo} />
       ) : null}
       <div className="cuadro">
-        {src ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={src} alt={bloque.alt} />
-        ) : (
-          <div aria-hidden="true" />
-        )}
+        <div className="lienzo-cotas">
+          {src ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={src} alt={bloque.alt} />
+          ) : (
+            <div aria-hidden="true" />
+          )}
+          <MarcasDeCota marcas={bloque.marcas} />
+        </div>
       </div>
     </section>
   );

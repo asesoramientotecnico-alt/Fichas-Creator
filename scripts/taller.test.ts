@@ -11,6 +11,15 @@ import {
   moverAntesDe,
 } from "../src/lib/orden-bloques";
 import { revisarBloques } from "../src/lib/validacion";
+import {
+  admiteMarcas,
+  agregarMarca,
+  borrarMarca,
+  cambiarSimbolo,
+  indiceReal,
+  marcasDe,
+  moverMarca,
+} from "../src/lib/marcas-cota";
 
 const casos: [string, () => boolean][] = [];
 const chk = (n: string, f: () => boolean) => casos.push([n, f]);
@@ -173,6 +182,95 @@ chk("cada aviso apunta al bloque, para poder saltar a él", () => {
   ];
   const avisos = revisarBloques(bs);
   return avisos.length === 2 && avisos.every((a) => bs.some((b) => b.id === a.bloqueId));
+});
+
+// ------------------------------------------------------------
+// Marcas de cota sobre la imagen
+// ------------------------------------------------------------
+
+const croquis = (): Bloque => ({
+  id: "c", tipo: "croquis", ancho: "completo",
+  cotas: [{ simbolo: "Ød", nombre: "Paso" }],
+});
+
+chk("una marca nace cerca del centro", () => {
+  const b = agregarMarca(croquis(), "Ød");
+  const m = marcasDe(b);
+  return m.length === 1 && Math.abs(m[0].x - 50) <= 11 && Math.abs(m[0].y - 50) <= 11 &&
+         m[0].simbolo === "Ød";
+});
+
+chk("dos marcas nuevas no nacen en el mismo punto: se taparían", () => {
+  let b = croquis();
+  for (let i = 0; i < 6; i++) b = agregarMarca(b, `M${i}`);
+  const puntos = marcasDe(b).map((m) => `${m.x},${m.y}`);
+  return new Set(puntos).size === 6;
+});
+
+chk("una posición explícita gana sobre la inicial", () => {
+  const [m] = marcasDe(agregarMarca(croquis(), "A", 10, 20));
+  return m.x === 10 && m.y === 20;
+});
+
+chk("mover una marca la deja donde se la soltó", () => {
+  const b = moverMarca(agregarMarca(croquis(), "Ød"), 0, 12.34, 78.9);
+  const [m] = marcasDe(b);
+  // Un decimal: más precisión no la distingue nadie.
+  return m.x === 12.3 && m.y === 78.9;
+});
+
+chk("una marca no se puede soltar fuera de la imagen", () => {
+  const b = moverMarca(agregarMarca(croquis(), "A"), 0, -40, 300);
+  const [m] = marcasDe(b);
+  // Fuera de la caja no se vería ni se podría volver a agarrar.
+  return m.x === 0 && m.y === 100;
+});
+
+chk("una coordenada que no es número no rompe la marca", () => {
+  const b = moverMarca(agregarMarca(croquis(), "A"), 0, Number.NaN, 10);
+  const [m] = marcasDe(b);
+  return m.x === 50 && m.y === 10;
+});
+
+chk("borrar la última marca deja el campo ausente, no un array vacío", () => {
+  const b = borrarMarca(agregarMarca(croquis(), "A"), 0);
+  return b.tipo === "croquis" && b.marcas === undefined && marcasDe(b).length === 0;
+});
+
+chk("cambiar el símbolo no mueve la marca", () => {
+  const b = cambiarSimbolo(moverMarca(agregarMarca(croquis(), "A"), 0, 20, 30), 0, "ØD");
+  const [m] = marcasDe(b);
+  return m.simbolo === "ØD" && m.x === 20 && m.y === 30;
+});
+
+chk("un índice fuera de rango no altera nada", () => {
+  const antes = agregarMarca(croquis(), "A");
+  return JSON.stringify(moverMarca(antes, 7, 1, 1)) === JSON.stringify(antes) &&
+         JSON.stringify(borrarMarca(antes, -1)) === JSON.stringify(antes);
+});
+
+chk("los tipos que no llevan imagen ignoran las marcas", () => {
+  const antes = txt("t");
+  return JSON.stringify(agregarMarca(antes, "A")) === JSON.stringify(antes) &&
+         admiteMarcas(antes) === false;
+});
+
+chk("imagen también admite marcas", () => {
+  const img: Bloque = { id: "i", tipo: "imagen", ancho: "medio", alt: "" };
+  return admiteMarcas(img) && marcasDe(agregarMarca(img, "A")).length === 1;
+});
+
+chk("indiceReal saltea las marcas sin símbolo, que no se dibujan", () => {
+  const marcas = [
+    { simbolo: "", x: 0, y: 0 },
+    { simbolo: "A", x: 0, y: 0 },
+    { simbolo: "  ", x: 0, y: 0 },
+    { simbolo: "B", x: 0, y: 0 },
+  ];
+  // En la hoja se ven dos: la visible 0 es la del array 1, y la 1 es la 3. Sin
+  // esta traducción, arrastrar "B" movería otra marca.
+  return indiceReal(marcas, 0) === 1 && indiceReal(marcas, 1) === 3 &&
+         indiceReal(marcas, 2) === -1;
 });
 
 let ok = 0;

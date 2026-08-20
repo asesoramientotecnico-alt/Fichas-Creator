@@ -1,11 +1,67 @@
 "use client";
 
 import { useId } from "react";
-import type { Bloque, AssetTipo } from "@/lib/tipos";
+import type { Bloque, AssetTipo, MarcaCota } from "@/lib/tipos";
 import type { AssetDisponible } from "@/app/acciones-assets";
 import { UNIDADES_NEGOCIO } from "@/lib/unidades-negocio";
+import { posicionInicial } from "@/lib/marcas-cota";
 
 /** Editores de campo por tipo de bloque. Ninguno acepta HTML ni estilos. */
+
+/**
+ * Símbolos colocados encima de la imagen. Acá se agregan, se nombran y se
+ * borran; la POSICIÓN se da arrastrándolos sobre la hoja, que es la única forma
+ * razonable de decir "esta cota va acá".
+ *
+ * No hay campo para el tipo de letra, el cuerpo ni el color: eso lo fija
+ * `ficha.css` (ver MarcaCota en tipos.ts).
+ */
+function MarcasEncima({
+  marcas,
+  onChange,
+}: {
+  marcas: MarcaCota[];
+  onChange: (marcas: MarcaCota[]) => void;
+}) {
+  return (
+    <div className="campo">
+      <label>Símbolos sobre la imagen</label>
+      <p className="paleta-vacia">
+        {marcas.length === 0
+          ? "Agregá un símbolo y arrastralo sobre la hoja hasta el punto que mide."
+          : "Arrastrá cada símbolo sobre la hoja para ubicarlo."}
+      </p>
+      <div className="sub-lista">
+        {marcas.map((m, i) => (
+          <div className="fila-lista" key={i}>
+            <div className="fila-campos" style={{ gridTemplateColumns: "1fr 76px" }}>
+              <input
+                value={m.simbolo}
+                placeholder="Ød"
+                aria-label={`Símbolo ${i + 1}`}
+                onChange={(e) =>
+                  onChange(marcas.map((o, j) => (j === i ? { ...o, simbolo: e.target.value } : o)))
+                }
+              />
+              <span className="marca-posicion">
+                {Math.round(m.x)}% · {Math.round(m.y)}%
+              </span>
+            </div>
+            <BotonQuitar
+              titulo="Quitar símbolo"
+              onClick={() => onChange(marcas.filter((_, j) => j !== i))}
+            />
+          </div>
+        ))}
+      </div>
+      <BotonAgregar
+        onClick={() => onChange([...marcas, { simbolo: "", ...posicionInicial(marcas.length) }])}
+      >
+        Agregar símbolo sobre la imagen
+      </BotonAgregar>
+    </div>
+  );
+}
 
 function Texto({
   etiqueta, valor, onChange, multilinea, placeholder,
@@ -345,6 +401,10 @@ export default function CamposBloque({
             ))}
           </div>
           <BotonAgregar onClick={() => set({ cotas: [...bloque.cotas, { simbolo: "", nombre: "" }] })}>Agregar cota</BotonAgregar>
+          <MarcasEncima
+            marcas={bloque.marcas ?? []}
+            onChange={(marcas) => set({ marcas: marcas.length ? marcas : undefined })}
+          />
         </>
       );
 
@@ -432,6 +492,10 @@ export default function CamposBloque({
           <SelectorAsset
             etiqueta="Imagen" valor={bloque.assetId}
             disponibles={assetsDisponibles} onChange={(v) => set({ assetId: v })}
+          />
+          <MarcasEncima
+            marcas={bloque.marcas ?? []}
+            onChange={(marcas) => set({ marcas: marcas.length ? marcas : undefined })}
           />
         </>
       );

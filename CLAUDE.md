@@ -19,6 +19,12 @@ Tres requisitos que definen el producto:
 1. **La estética es invariante.** El contenido y los campos cambian ficha a ficha; el layout, la
    tipografía y el color nunca. Esto se garantiza estructuralmente (ver §4), no por disciplina del
    usuario.
+
+   > **Precisión, agosto 2026.** Los símbolos de cota sobre una imagen (§4, `marcas`) son la única
+   > cosa que el usuario posiciona libremente, porque una cota tiene que apuntar a lo que mide y eso
+   > es un dato inherentemente posicional. Lo que sigue siendo invariante es la APARIENCIA: el tipo
+   > de letra, el cuerpo, el color, el recuadro y el fondo los fija `ficha.css` y no hay ningún
+   > campo que los cambie. El usuario elige dónde, nunca cómo se ve.
 2. **Toda corrección queda registrada.** Quién, cuándo, qué cambió. Historial auditable, no un
    `updated_at`.
 3. **Botón de revisión con IA.** La IA revisa y propone mejoras sobre contenido ya cargado. No
@@ -118,6 +124,12 @@ Variantes, que no son tipos nuevos:
 
 - `tabla-kv` con `orientacion: "vertical"`: rótulo arriba del valor en vez de a su izquierda. Es la
   disposición que necesita una columna angosta. Mismos campos, misma estética.
+- `croquis` e `imagen` con `marcas`: símbolos colocados ENCIMA de la imagen, en el punto que miden.
+  Las coordenadas van en porcentaje de la caja de la imagen, no en píxeles, así la marca cae en el
+  mismo punto del dibujo en pantalla, en el PDF y con el bloque a un tercio o a ancho completo. Se
+  colocan arrastrándolas sobre la hoja en el editor. La leyenda de `croquis.cotas` sigue existiendo
+  y es otra cosa: la lista símbolo → significado que va al costado. Ver la precisión de §1
+  requisito 1 sobre por qué la posición es libre y la apariencia no.
 
 Reglas:
 
@@ -282,7 +294,9 @@ Dos problemas distintos, no mezclar:
 - **`chart`** (datos numéricos): SVG generado server-side desde la tabla del bloque. Determinístico,
   sin IA.
 - **`croquis`** (esquema técnico con cotas): **librería de assets por familia.** Se sube una vez, se
-  asocia a la familia, y todas las fichas de esa familia lo reusan con su leyenda editable.
+  asocia a la familia, y todas las fichas de esa familia lo reusan con su leyenda editable. Los
+  símbolos que van encima del dibujo son del BLOQUE, no del asset (§4, `marcas`): el mismo croquis
+  reusado por dos fichas puede llevar cotas distintas sin duplicar la imagen.
 
 Prohibido en v1: generar croquis con IA desde cero. Produce geometría plausible pero incorrecta y
 cotas mal ubicadas, lo cual es inaceptable en una ficha que va a cliente. En una versión futura, la
@@ -345,4 +359,5 @@ familia. Bloque `chart`.
 | La misma imagen se sube una vez por ficha y la librería de §7 queda inservible | Deduplicación por hash del contenido en el nombre del archivo. Un E2E carga el mismo PDF en dos fichas y verifica que el assetId es el mismo |
 | El modelo asigna una imagen al bloque equivocado | Elige de un inventario cerrado, así que el error posible es de emparejamiento, no de invención: la imagen existe y está en la ficha, sólo en el bloque de al lado. Se ve en el preview y se cambia con el selector de assets del editor |
 | El recorte de una figura arrastra texto vecino que cae dentro de su rectángulo | Es el comportamiento buscado: los rótulos de la escala de dureza son parte de la figura y no del bitmap. El riesgo es un rectángulo que se solape con texto ajeno; se ve en el preview y el bloque se puede dejar sin imagen |
+| Los símbolos de cota sobre la imagen abren la puerta a la deriva estética | La posición es libre pero la apariencia la fija `ficha.css` y no hay campo que la cambie (§1 requisito 1, precisión). Una marca mal ubicada se ve en el lienzo, que es la misma vista que el PDF |
 | Un bloque apunta a un asset que la librería de su familia no cubre y queda un hueco | `assetsDeFamilia` recibe los bloques y resuelve además todo asset referenciado, sea de otra familia o de ninguna. Pasa con las imágenes de un PDF cuando el producto todavía no tiene familia |

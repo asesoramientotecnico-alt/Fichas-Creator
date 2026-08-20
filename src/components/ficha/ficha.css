@@ -890,3 +890,52 @@
   padding: 1.1mm 2mm 1.1mm 0;
   font-size: 8.5pt;
 }
+
+/* ---------------------------------------------------------------
+   Marcas de cota sobre una imagen
+   ---------------------------------------------------------------
+   La persona elige DÓNDE va cada símbolo; cómo se ve lo fija este bloque de
+   CSS y no hay campo que lo cambie (ver MarcaCota en tipos.ts). Es lo que
+   mantiene la estética invariante con un dato que es posicional por
+   naturaleza: una cota tiene que apuntar a lo que mide. */
+
+.lienzo-cotas {
+  position: relative;
+  display: grid;
+  min-width: 0;
+}
+
+.marcas-cota {
+  position: absolute;
+  inset: 0;
+  /* Los símbolos no interceptan el cursor: en el editor la imagen sigue siendo
+     clickeable, y cada marca vuelve a habilitarlo para sí misma. */
+  pointer-events: none;
+}
+
+.marca-cota {
+  position: absolute;
+  /* La coordenada es el CENTRO del símbolo: al arrastrarlo, el punto que se
+     está señalando es el que queda bajo el cursor. */
+  transform: translate(-50%, -50%);
+  font-family: var(--font-condensed);
+  font-weight: var(--weight-bold);
+  font-size: 2.1mm;
+  line-height: 1;
+  letter-spacing: var(--tracking-snug);
+  color: var(--famiq-graphite);
+  background: rgba(255, 255, 255, .88);
+  padding: 0.3mm 0.7mm;
+  border: 0.25mm solid var(--famiq-graphite);
+  white-space: nowrap;
+  pointer-events: auto;
+}
+
+/* Un bloque que declara imagen y todavía no la tiene reserva su espacio.
+   Antes la caja medía cero de alto: el hueco no se veía —así que nadie se
+   enteraba de que faltaba la imagen— y un símbolo de cota colocado encima caía
+   sobre una caja sin altura. Reservarlo acá y no sólo en el editor es lo que
+   evita que el preview mienta sobre el PDF (§3). */
+.lienzo-cotas > div[aria-hidden="true"] {
+  min-height: 28mm;
+}

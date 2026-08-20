@@ -70,10 +70,12 @@ test("anular saca la ficha del listado y conserva su historial", async ({ page }
   // Queda anulada, con el aviso, y fuera del listado.
   await expect(page.getByText(/Esta ficha está anulada/)).toBeVisible();
 
-  await page.goto("/");
+  // Se busca por nombre y no se confía en la primera página: con el listado
+  // paginado, "no está en la página 1" no probaría que está excluida.
+  await page.goto(`/?q=${encodeURIComponent(nombre)}`);
   await expect(page.getByRole("link", { name: nombre })).toHaveCount(0);
 
-  await page.goto("/?anuladas=1");
+  await page.goto(`/?anuladas=1&q=${encodeURIComponent(nombre)}`);
   await expect(page.getByRole("link", { name: nombre })).toBeVisible();
 
   // El historial sigue intacto: ficha_revision no se borró.
@@ -92,7 +94,7 @@ test("una ficha anulada se puede restaurar a borrador", async ({ page }) => {
   await page.getByRole("button", { name: "→ Borrador" }).click();
   await expect(page.getByText(/Esta ficha está anulada/)).toHaveCount(0, { timeout: 20_000 });
 
-  await page.goto("/");
+  await page.goto(`/?q=${encodeURIComponent(nombre)}`);
   await expect(page.getByRole("link", { name: nombre })).toBeVisible();
 });
 

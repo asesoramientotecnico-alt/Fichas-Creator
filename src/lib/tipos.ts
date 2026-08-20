@@ -165,10 +165,32 @@ export interface BloqueChips extends BloqueBase {
   items: string[];
 }
 
+/**
+ * Símbolo de cota colocado ENCIMA de la imagen, en el punto que mide.
+ *
+ * `x` e `y` van en porcentaje de la caja de la imagen, no en píxeles: la misma
+ * marca tiene que caer en el mismo lugar del dibujo en pantalla, en el PDF y
+ * con el bloque a un tercio o a ancho completo.
+ *
+ * La POSICIÓN la elige la persona; la APARIENCIA no. El tipo de letra, el
+ * cuerpo, el color y el fondo de la marca los fija `ficha.css` y no hay campo
+ * para cambiarlos. Es lo que mantiene el requisito 1 de §1 con un dato que es
+ * inherentemente posicional: una cota tiene que apuntar a lo que mide.
+ */
+export interface MarcaCota {
+  simbolo: string;
+  /** 0 a 100, desde el borde izquierdo de la imagen. */
+  x: number;
+  /** 0 a 100, desde el borde superior de la imagen. */
+  y: number;
+}
+
 export interface BloqueCroquis extends BloqueBase {
   tipo: "croquis";
   assetId?: string;
   cotas: { simbolo: string; nombre: string }[];
+  /** Símbolos colocados sobre el dibujo. La leyenda sigue en `cotas`. */
+  marcas?: MarcaCota[];
 }
 
 export interface BloqueTablaDim extends BloqueBase {
@@ -208,6 +230,8 @@ export interface BloqueImagen extends BloqueBase {
   assetId?: string;
   /** Descripción para lectores de pantalla. No es una leyenda visible. */
   alt: string;
+  /** Símbolos colocados sobre la imagen. Ver `MarcaCota`. */
+  marcas?: MarcaCota[];
   /** Marco de 1px sobre fondo claro. El despiece lo lleva; un gráfico no. */
   marco?: boolean;
 }

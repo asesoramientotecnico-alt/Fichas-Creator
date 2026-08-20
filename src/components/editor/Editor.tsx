@@ -14,6 +14,7 @@ import {
   moverA as moverAEn,
   moverAntesDe as moverAntesDeEn,
 } from "@/lib/orden-bloques";
+import { indiceReal, marcasDe, moverMarca } from "@/lib/marcas-cota";
 import { useRetardado } from "@/lib/usar-retardado";
 import Lienzo from "./Lienzo";
 import PaletaBloques from "./PaletaBloques";
@@ -125,6 +126,19 @@ export default function Editor({
 
   const asignarAsset = (id: string, assetId: string) =>
     setBloques((previos) => conAsset(previos, id, assetId));
+
+  /**
+   * Reubica una marca de cota. El índice viene del DOM, donde sólo se dibujan
+   * las marcas con símbolo: hay que traducirlo al del array o se movería otra.
+   */
+  const reubicarMarca = (id: string, indiceVisible: number, x: number, y: number) =>
+    setBloques((previos) =>
+      previos.map((b) => {
+        if (b.id !== id) return b;
+        const i = indiceReal(marcasDe(b), indiceVisible);
+        return i < 0 ? b : moverMarca(b, i, x, y);
+      }),
+    );
 
   const duplicar = (id: string) => {
     const original = bloques.find((b) => b.id === id);
@@ -297,6 +311,7 @@ export default function Editor({
           onInsertar={insertarAntesDe}
           onAncho={cambiarAncho}
           onAsset={asignarAsset}
+          onMarca={reubicarMarca}
         />
 
         <aside className="taller-der">

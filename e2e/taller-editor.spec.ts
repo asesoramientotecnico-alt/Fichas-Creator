@@ -187,3 +187,86 @@ test("el zoom del lienzo no cambia los bloques", async ({ page }) => {
   await expect(page.locator(".lienzo .bloque[data-bloque-id]")).toHaveCount(1);
   await expect(page.locator(".orden-item")).toHaveCount(1);
 });
+
+test("los símbolos de cota se colocan arrastrando y llegan a la hoja y al PDF", async ({
+  page,
+}) => {
+  test.setTimeout(150_000);
+  await entrar(page);
+  const fichaId = await fichaVacia(page);
+  await page.goto(`/fichas/${fichaId}/editar`);
+
+  // Un croquis con su leyenda y su imagen. La imagen puede no estar —el
+  // producto de prueba no tiene familia— y los símbolos se colocan igual: caen
+  // sobre la caja del bloque.
+  await page
+    .locator(".paleta")
+    .getByRole("button", { name: /Agregar Croquis/ })
+    .click();
+  await page.getByPlaceholder("d").first().fill("Ød");
+  await page.getByPlaceholder("diámetro nominal").first().fill("Paso de esfera");
+
+  // Dos símbolos sobre la imagen. Nacen en el centro.
+  const agregar = page.getByRole("button", { name: "Agregar símbolo sobre la imagen" });
+  await agregar.click();
+  await page.getByLabel("Símbolo 1").fill("Ød");
+  await agregar.click();
+  await page.getByLabel("Símbolo 2").fill("L");
+
+  // En la hoja se dibujan los dos, con la apariencia que fija el CSS.
+  const marcas = page.locator(".lienzo .marca-cota");
+  await expect(marcas).toHaveCount(2, { timeout: 20_000 });
+  await expect(marcas.first()).toHaveText("Ød");
+
+  // Arrastrar la primera la mueve, y la posición se refleja en el inspector.
+  const antes = await page.locator(".marca-posicion").first().textContent();
+  const caja = page.locator(".lienzo .lienzo-cotas").first();
+  const r = (await caja.boundingBox())!;
+  const origen = (await marcas.first().boundingBox())!;
+  await page.mouse.move(origen.x + origen.width / 2, origen.y + origen.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(r.x + r.width * 0.2, r.y + r.height * 0.75, { steps: 8 });
+  await page.mouse.up();
+
+  // El porcentaje que muestra el inspector es el del punto donde se soltó.
+  await expect
+    .poll(async () => page.locator(".marca-posicion").first().textContent(), {
+      timeout: 10_000,
+    })
+    .not.toBe(antes);
+
+  await page.getByLabel("Comentario de la revisión").fill("Coloco los símbolos de cota");
+  await page.getByRole("button", { name: "Guardar revisión" }).click();
+  await expect(page).toHaveURL(new RegExp(`${fichaId}$`), { timeout: 25_000 });
+
+  // La ficha guardada los muestra: es el mismo componente que el PDF (§3).
+  await expect(page.locator(".hoja:not([data-medir-hoja]) .marca-cota")).toHaveCount(2, {
+    timeout: 20_000,
+  });
+
+  // Y salen en el PDF, con su símbolo como texto seleccionable.
+  const pdf = await page.request.get(`/api/fichas/${fichaId}/pdf`, { timeout: 90_000 });
+  expect(pdf.ok()).toBe(true);
+  const bytes = await pdf.body();
+  expect(bytes.length).toBeGreaterThan(1000);
+  expect(bytes.subarray(0, 5).toString()).toBe("%PDF-");
+});
+
+test("un símbolo sin texto no se dibuja en la hoja", async ({ page }) => {
+  test.setTimeout(90_000);
+  await entrar(page);
+  const fichaId = await fichaVacia(page);
+  await page.goto(`/fichas/${fichaId}/editar`);
+
+  await page
+    .locator(".paleta")
+    .getByRole("button", { name: /Agregar Croquis/ })
+    .click();
+  await page.getByRole("button", { name: "Agregar símbolo sobre la imagen" }).click();
+
+  // Nace vacío: no hay nada que mostrar, así que no se dibuja. Un cuadrito
+  // vacío sobre el dibujo sería basura en la ficha que ve el cliente.
+  await expect(page.locator(".lienzo .marca-cota")).toHaveCount(0);
+  await page.getByLabel("Símbolo 1").fill("A");
+  await expect(page.locator(".lienzo .marca-cota")).toHaveCount(1, { timeout: 20_000 });
+});

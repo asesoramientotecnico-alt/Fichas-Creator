@@ -44,6 +44,7 @@ export default function Lienzo({
   onInsertar,
   onAncho,
   onAsset,
+  onMarca,
 }: {
   datos: Omit<DatosFicha, "hojas">;
   bloques: Bloque[];
@@ -56,6 +57,8 @@ export default function Lienzo({
   onInsertar: (tipo: TipoBloque, antesDe: string | null) => void;
   onAncho: (id: string, ancho: AnchoBloque) => void;
   onAsset: (id: string, assetId: string) => void;
+  /** Reubica la marca de cota `indice` del bloque, en porcentaje de la imagen. */
+  onMarca: (id: string, indice: number, x: number, y: number) => void;
 }) {
   const contenedor = useRef<HTMLDivElement>(null);
   // La hoja mide 210 mm: en un notebook no entra a tamaño real. El zoom usa la
@@ -159,6 +162,51 @@ export default function Lienzo({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [arrastrandoAncho, seleccionado]);
 
+  /**
+   * Arrastrar un símbolo de cota sobre su imagen.
+   *
+   * Va con eventos de puntero y no con el arrastre nativo porque acá no cruza
+   * paneles: es mover algo dentro de su propia caja, y lo que hace falta es la
+   * posición exacta en cada movimiento, que el arrastre nativo no da.
+   *
+   * El resultado se guarda en porcentaje de la caja de la imagen, así la marca
+   * cae en el mismo punto del dibujo en el PDF y con cualquier ancho de bloque.
+   */
+  const tomarMarca = (e: React.PointerEvent) => {
+    if (!(e.target instanceof Element)) return;
+    const marca = e.target.closest("[data-marca-indice]");
+    if (!marca) return;
+    const caja = marca.closest(".lienzo-cotas");
+    const bloque = marca.closest("[data-bloque-id]")?.getAttribute("data-bloque-id");
+    if (!caja || !bloque) return;
+
+    const indice = Number(marca.getAttribute("data-marca-indice"));
+    if (!Number.isInteger(indice)) return;
+
+    // Se elige el bloque y no se deja que el clic burbujee: arrastrar una marca
+    // no debería, además, contar como clic en la hoja.
+    e.preventDefault();
+    e.stopPropagation();
+    onSeleccionar(bloque);
+
+    const mover = (ev: PointerEvent) => {
+      const r = caja.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) return;
+      onMarca(
+        bloque,
+        indice,
+        ((ev.clientX - r.left) / r.width) * 100,
+        ((ev.clientY - r.top) / r.height) * 100,
+      );
+    };
+    const soltar = () => {
+      window.removeEventListener("pointermove", mover);
+      window.removeEventListener("pointerup", soltar);
+    };
+    window.addEventListener("pointermove", mover);
+    window.addEventListener("pointerup", soltar);
+  };
+
   const alSoltar = (e: React.DragEvent) => {
     e.preventDefault();
     const carga = cargaDe(e);
@@ -204,6 +252,7 @@ export default function Lienzo({
         }
       }}
       onDrop={alSoltar}
+      onPointerDown={tomarMarca}
       onClick={(e) => onSeleccionar(bloqueDe(e))}
     >
       <div className="lienzo-zoom-barra">

@@ -151,7 +151,9 @@ test("el PDF de una ficha real exige sesión y respeta su estado", async ({ page
   await expect(page).toHaveURL(/^(?!.*\/login).*$/, { timeout: 20_000 });
 
   // Una ficha con bloques: la de M3 quedó con contenido.
-  await page.goto("/");
+  // La lista pagina de 25: se busca en vez de asumir que está en la primera
+  // página.
+  await page.goto("/?q=Tuerca+de+prueba+M3");
   const enlace = page.getByRole("link", { name: /Tuerca de prueba M3/ }).first();
   await enlace.click();
   await expect(page).toHaveURL(/\/fichas\/[0-9a-f-]{36}$/, { timeout: 20_000 });

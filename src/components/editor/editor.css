@@ -402,3 +402,16 @@ textarea { resize: vertical; min-height: 4.5em; }
 .zoom-opcion[data-activo="true"] { border-color: var(--famiq-red); color: var(--famiq-red); }
 
 .lienzo-zoom { width: fit-content; }
+
+/* Posición de una marca de cota, informativa: se cambia arrastrando en la hoja. */
+.marca-posicion {
+  font-size: var(--fs-micro);
+  color: var(--fg-3);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  align-self: center;
+}
+
+/* En el lienzo la marca se puede agarrar; en la ficha impresa no existe cursor. */
+.lienzo .marca-cota { cursor: grab; }
+.lienzo .marca-cota:hover { outline: 1px solid var(--famiq-red); }
