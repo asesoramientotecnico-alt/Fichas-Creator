@@ -272,15 +272,15 @@ Modelo: `ANTHROPIC_MODELO_EXTRACCION`, y si no está, el mismo del revisor. Medi
 del disco (una hoja, 3 imágenes) ~35 s y ~6.100 tokens de entrada; la plantilla V26 (tres hojas, 5
 imágenes) ~37 s y ~10.700. El tamaño del PDF pesa menos que la cantidad de bloques a emitir.
 
-Medido sobre las cuatro fichas de `referencia/nuevas/`, que son las que hoy fijan la estética (§3):
-clavos ~14 s / 6.500 tokens, arandela SAE ~18 s / 8.300, arandela Grower ~20 s / 8.700, válvula
-esférica ~32 s / 11.300. Dos cosas que ese ensayo dejó a la vista y que están corregidas en el
-prompt:
+Medido sobre las fichas de `referencia/nuevas/`, que son las que hoy fijan la estética (§3):
+arandela SAE ~18 s / 8.300 tokens, arandela Grower ~20 s / 8.700, válvula esférica ~32 s / 11.300.
+Dos cosas que ese ensayo dejó a la vista y que están corregidas en el prompt:
 
-- **La cabecera tiene cuatro campos y hay que respetar los cuatro.** El título grande puede no
-  coincidir con la línea de clasificación de arriba —una ficha titulada "Clavos" dentro de la
-  subfamilia de remaches es un caso real del catálogo—, y el modelo pisaba `tituloEs` con la
-  subfamilia "porque se correspondían mejor". Eso es corregir, que es la regla 3.
+- **La cabecera tiene cuatro campos y hay que respetar los cuatro.** Cuando el título grande no
+  coincide con la línea de clasificación de arriba, el modelo pisaba `tituloEs` con la subfamilia
+  "porque se correspondían mejor". Eso es corregir, que es la regla 3: cada campo lleva la línea que
+  le toca por su lugar en la hoja, coincidan o no. Se vio en un borrador donde no coincidían, que es
+  justo el caso en que la ficha transcripta sale con otro nombre que la original.
 - **El ancho lo decide la maqueta, no el largo del texto.** Sin instrucción explícita el modelo
   devolvía la ficha entera en `completo`, que aplasta dos columnas en una pila. Ahora la regla es
   mirar a qué ALTURA de la hoja está cada rótulo: dos rótulos a la misma altura son dos bloques

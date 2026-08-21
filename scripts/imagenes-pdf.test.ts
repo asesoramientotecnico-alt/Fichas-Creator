@@ -5,8 +5,8 @@
  * Las de `referencia/nuevas/` se agregaron después, cuando pasaron a ser la
  * fuente de verdad estética (§3), y cubren tres casos que las otras dos no
  * tenían: una ficha de una sola hoja —donde la repetición no puede delatar al
- * logo—, la píldora de unidad de negocio que sobrevive al filtro a propósito,
- * y una ficha de tres hojas con figura en cada una.
+ * logo y por eso se cuela—, la píldora de unidad de negocio que sobrevive al
+ * filtro a propósito, y una ficha de tres hojas con figura en cada una.
  *
  * Uso: tsx scripts/imagenes-pdf.test.ts
  */
@@ -24,7 +24,7 @@ const chk = (n: string, f: () => boolean | Promise<boolean>) => casos.push([n, f
 
 const DISCO = "referencia/Ficha Tecnica - Disco de corte SG Steelox.pdf";
 const V26 = "referencia/Plantilla ficha tecnica FAMIQ V26.pdf";
-const CLAVOS = "referencia/nuevas/Clavos.pdf";
+const DISCO_NUEVO = "referencia/nuevas/Disco de corte SG Steelox.pdf";
 const GROWER = "referencia/nuevas/Arandela Grower.pdf";
 const VALVULA = "referencia/nuevas/Valvula esferica.pdf";
 
@@ -194,18 +194,29 @@ chk("la descripción de una imagen sin asignar dice dónde estaba", async () => 
 // Las fichas nuevas: el filtro contra la maqueta que hoy es la referencia
 // ------------------------------------------------------------
 
-chk("clavos: una sola hoja, las 2 figuras quedan y no se descarta nada", async () => {
-  // Con una hoja, la repetición no puede delatar al logo, y las otras tres
-  // señales no tienen por qué disparar: acá el encabezado es texto, no un
-  // bitmap. Que no descarte nada es lo correcto, no una falla del filtro.
-  const { contenido, descartadas } = await analizarImagenes(pdf(CLAVOS));
-  return contenido.length === 2 && descartadas.length === 0;
+chk("disco nuevo: en una ficha de una hoja el logo se cuela, y eso está asumido", async () => {
+  // Límite conocido del filtro, no una falla que haya que tapar: al logo lo
+  // delata repetirse en todas las hojas, y con UNA hoja esa señal no existe.
+  // Acá el lockup de la cabecera mide 973×379 px y ocupa bastante, así que las
+  // otras tres señales tampoco lo alcanzan, y entra al inventario junto con la
+  // foto y la escala de dureza.
+  //
+  // Lo que impide que ensucie la librería es lo de más abajo en el circuito:
+  // sólo se sube lo que el modelo asigna a un bloque, y el logo no se asigna
+  // nunca, así que termina en la lista de lo no transcripto (§4bis regla 4).
+  // Bajar el umbral para cazarlo acá dejaría entrar basura en las otras fichas.
+  const ims = await imagenes(DISCO_NUEVO);
+  const logo = ims.find((im) => im.posicion === "arriba a la izquierda");
+  return ims.length === 3 && logo !== undefined &&
+         logo.anchoOrigenPx === 973 && logo.altoOrigenPx === 379;
 });
 
-chk("clavos: la foto de producto y el croquis quedan los dos, a la izquierda", async () => {
-  const ims = await imagenes(CLAVOS);
-  return ims[0].posicion === "arriba a la izquierda" &&
-         ims[1].posicion === "al medio a la izquierda";
+chk("disco nuevo: la foto de producto y la escala de dureza son las otras dos", async () => {
+  const ims = await imagenes(DISCO_NUEVO);
+  const foto = ims.find((im) => im.posicion === "arriba a la derecha");
+  const escala = ims.find((im) => im.posicion === "al medio al centro");
+  return foto?.extension === "jpg" && foto.anchoOrigenPx === 538 &&
+         escala !== undefined && escala.anchoOrigenPx === 470;
 });
 
 chk("grower: el logo se descarta por repetirse y la píldora sobrevive", async () => {
