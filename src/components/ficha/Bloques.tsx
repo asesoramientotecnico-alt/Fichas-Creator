@@ -219,7 +219,8 @@ export function TextoRico({ bloque }: { bloque: BloqueTextoRico }) {
   return (
     <section className="bloque bloque-texto-rico"
       data-bloque-id={bloque.id} data-ancho={bloque.ancho ?? "medio"}
-      data-columnas={bloque.columnas === 2 ? "2" : undefined}>
+      data-columnas={bloque.columnas === 2 ? "2" : undefined}
+      data-vinetas={bloque.vinetas ? "true" : undefined}>
       <Encabezado etiqueta={bloque.etiqueta} />
       {/* El rótulo queda arriba, a ancho completo: son los párrafos los que se
           reparten en columnas, no la sección entera. */}

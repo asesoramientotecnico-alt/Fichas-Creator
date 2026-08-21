@@ -175,6 +175,13 @@ export interface BloqueTextoRico extends BloqueBase {
    * completo deja renglones de más de cien caracteres.
    */
   columnas?: 2;
+  /**
+   * Marca cada párrafo con una viñeta roja, para una enumeración corta tipo
+   * "Ventajas" donde cada línea es un ítem y no prosa corrida. Es otra
+   * disposición: los párrafos son los mismos y la viñeta la dibuja el CSS, así
+   * que no hay forma de elegir su color ni su forma.
+   */
+  vinetas?: true;
   etiqueta: string;
   /** Párrafos. Sólo negrita e itálica (§4). */
   parrafos: string[];

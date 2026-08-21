@@ -1001,3 +1001,25 @@
 .bloque-codigos[data-escala="75"] .figura { width: 75%; }
 .bloque-codigos[data-escala="50"] .figura { width: 50%; }
 .bloque-codigos[data-escala="25"] .figura { width: 25%; }
+
+/* Párrafos como enumeración, con viñeta roja. Es la disposición de "Ventajas":
+   cada párrafo es un ítem, no prosa corrida. La viñeta la dibuja el CSS —color,
+   tamaño y sangría fijos— así que no hay campo que la pueda cambiar. */
+.bloque-texto-rico[data-vinetas="true"] .cuerpo-texto p {
+  position: relative;
+  padding-left: 4.2mm;
+  margin-bottom: 2.1mm;
+}
+
+.bloque-texto-rico[data-vinetas="true"] .cuerpo-texto p::before {
+  content: "";
+  position: absolute;
+  left: 0.6mm;
+  /* Centrado sobre la primera línea, no sobre el párrafo: con dos renglones la
+     viñeta tiene que quedar a la altura del primero. */
+  top: 0.35em;
+  width: 1.2mm;
+  height: 1.2mm;
+  border-radius: 50%;
+  background: var(--famiq-red);
+}

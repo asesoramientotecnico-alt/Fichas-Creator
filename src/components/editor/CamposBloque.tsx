@@ -425,6 +425,15 @@ export default function CamposBloque({
             ]}
             onChange={(v) => set({ columnas: v === "2" ? 2 : undefined })}
           />
+          <Opcion
+            etiqueta="Viñetas"
+            valor={bloque.vinetas ? "si" : "no"}
+            opciones={[
+              { valor: "no", nombre: "Sin viñetas (prosa)" },
+              { valor: "si", nombre: "Con viñeta roja (enumeración)" },
+            ]}
+            onChange={(v) => set({ vinetas: v === "si" ? true : undefined })}
+          />
           <Texto etiqueta="Etiqueta de la sección" valor={bloque.etiqueta} onChange={(v) => set({ etiqueta: v })} />
           <div className="sub-lista">
             {bloque.parrafos.map((p, i) => (
