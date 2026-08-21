@@ -110,6 +110,7 @@ export async function generarPdf(
 
     const hojas: Hoja[] = repartidas.map((h, i) => ({
       bloques: h.bloques,
+      regiones: h.regiones,
       alPie: h.alPie,
       ...(i > 0
         ? {

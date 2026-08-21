@@ -1054,3 +1054,33 @@
   border-radius: 50%;
   background: var(--famiq-red);
 }
+
+/* ------------------------------------------------------------
+   Zona de dos columnas que fluyen independientes
+   ------------------------------------------------------------
+   Ocupa las 12 pistas y adentro reparte dos columnas de 6, cada una apilando
+   sus bloques por su cuenta. Con filas, un bloque corto al lado de uno largo
+   dejaba un hueco del tamaño de la diferencia; así ese hueco no existe.
+   El canal y la separación vertical son los mismos de la grilla, para que la
+   hoja siga teniendo un solo ritmo. */
+.zona-columnas {
+  grid-column: span 12;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: var(--grilla-columna);
+  align-items: start;
+}
+
+.zona-columnas .columna {
+  display: flex;
+  flex-direction: column;
+  gap: var(--grilla-fila);
+  min-width: 0;
+}
+
+/* Adentro de una columna el ancho ya está dado por la columna: las reglas de
+   pistas de la grilla no aplican, y sin esto un bloque `medio` intentaría
+   ocupar 6 pistas de una grilla que acá no existe. */
+.zona-columnas .columna > .bloque {
+  grid-column: auto;
+}

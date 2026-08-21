@@ -41,12 +41,21 @@ async function fichaVacia(page: import("@playwright/test").Page) {
   return page.url().split("/").pop()!;
 }
 
-/** Agrega tres bloques con rótulo distinguible y devuelve sus rótulos. */
+/**
+ * Agrega tres bloques con rótulo distinguible y devuelve sus rótulos.
+ *
+ * Los pasa a ancho completo a propósito: "Párrafos" nace de media hoja y dos
+ * bloques de media hoja se reparten en las dos columnas independientes de la
+ * zona, así que el orden del DOM deja de ser el orden de lectura. Estas pruebas
+ * son sobre el ORDEN de los bloques, no sobre el reparto en columnas —que tiene
+ * su propia prueba más abajo—, y a ancho completo el DOM lo refleja derecho.
+ */
 async function conTresBloques(page: import("@playwright/test").Page) {
   const rotulos = ["Uno", "Dos", "Tres"];
   for (const r of rotulos) {
     await page.locator(".paleta").getByRole("button", { name: /Agregar Párrafos/ }).click();
     await page.getByLabel("Etiqueta de la sección").fill(r);
+    await page.locator(".ancho-opcion", { hasText: "Completo" }).click();
   }
   await expect(page.locator(".orden-item")).toHaveCount(3);
   return rotulos;
@@ -299,4 +308,30 @@ test("las imágenes que el filtro descarta se pueden rescatar a la librería", a
   // vez de fallar en silencio.
   await tarjetas.first().getByRole("button", { name: "Agregar a la librería" }).click();
   await expect(page.locator("p.error")).toContainText(/familia asignada/, { timeout: 20_000 });
+});
+
+test("dos bloques de media hoja se reparten en columnas independientes", async ({ page }) => {
+  test.setTimeout(90_000);
+  await entrar(page);
+  const fichaId = await fichaVacia(page);
+  await page.goto(`/fichas/${fichaId}/editar`);
+
+  // "Párrafos" nace de media hoja, que es el ancho que entra al flujo de dos
+  // columnas: el tercero va debajo del más corto y no abre una fila nueva.
+  for (const r of ["Uno", "Dos", "Tres"]) {
+    await page.locator(".paleta").getByRole("button", { name: /Agregar Párrafos/ }).click();
+    await page.getByLabel("Etiqueta de la sección").fill(r);
+  }
+  await expect(page.locator(".orden-item")).toHaveCount(3);
+
+  const zona = page.locator(".lienzo .zona-columnas");
+  await expect(zona).toHaveCount(1, { timeout: 20_000 });
+
+  const columnas = zona.locator(".columna");
+  await expect(columnas).toHaveCount(2);
+  // Con los tres del mismo alto, el primero y el tercero quedan a la izquierda
+  // y el segundo solo a la derecha. Es el reparto de columnas independientes:
+  // el tercero no espera a que la derecha se llene.
+  await expect(columnas.nth(0).locator(".bloque-etiqueta")).toHaveText(["Uno", "Tres"]);
+  await expect(columnas.nth(1).locator(".bloque-etiqueta")).toHaveText(["Dos"]);
 });

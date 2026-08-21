@@ -1,4 +1,5 @@
 import type { Bloque, FichaEstado } from "@/lib/tipos";
+import type { Region } from "@/lib/paginado";
 import { ESTADOS_SIN_MARCA_DE_AGUA } from "@/lib/tipos";
 import { identificacion } from "@/lib/ficha-textos";
 import { RenderBloque } from "./Bloques";
@@ -14,6 +15,12 @@ export interface Hoja {
   /** Producto, en rojo al lado del título de las hojas interiores. */
   antetitulo?: string;
   bloques: Bloque[];
+  /**
+   * Los tramos de la hoja, con las zonas donde las dos columnas fluyen
+   * independientes. Cuando no viene, la hoja se dibuja con `bloques` en la
+   * grilla plana: así una ficha armada a mano en un fixture sigue funcionando.
+   */
+  regiones?: Region[];
   /**
    * Bloques anclados al pie de esta hoja. Cuando no se especifica, se
    * deducen del tipo: así una ficha armada a mano sigue funcionando.
@@ -149,9 +156,30 @@ export default function FichaVista({
             )}
 
             <div className="grilla-bloques">
-              {cuerpo.map((bloque) => (
-                <RenderBloque key={bloque.id} bloque={bloque} assets={assets} />
-              ))}
+              {hoja.regiones
+                ? hoja.regiones.map((region, r) =>
+                    region.clase === "fila" ? (
+                      region.bloques.map((bloque) => (
+                        <RenderBloque key={bloque.id} bloque={bloque} assets={assets} />
+                      ))
+                    ) : (
+                      // Dos columnas que fluyen solas: cada una apila sus
+                      // bloques sin esperar a la otra. El reparto lo decidió
+                      // `repartirEnHojas` midiendo; acá sólo se dibuja.
+                      <div className="zona-columnas" key={`zona-${r}`}>
+                        {[region.izquierda, region.derecha].map((columna, c) => (
+                          <div className="columna" key={c}>
+                            {columna.map((bloque) => (
+                              <RenderBloque key={bloque.id} bloque={bloque} assets={assets} />
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    ),
+                  )
+                : cuerpo.map((bloque) => (
+                    <RenderBloque key={bloque.id} bloque={bloque} assets={assets} />
+                  ))}
             </div>
 
             {pie.length > 0 ? (

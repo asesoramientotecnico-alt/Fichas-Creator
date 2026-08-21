@@ -180,6 +180,15 @@ Reglas:
   de esas 12 —`un-tercio` (4), `medio` (6), `dos-tercios` (8), `completo` (12)— y nada más. Un
   bloque alto puede declarar `filasGrilla: 2` para que los dos bloques que lo siguen se apilen a su
   costado.
+- Los bloques de **media hoja fluyen en dos columnas independientes**, no en filas de dos. Cada
+  bloque de media hoja va a la columna que en ese momento está más corta, así que una columna larga
+  no le deja un hueco en blanco a la de al lado: es lo que hacen las fichas de referencia, donde una
+  descripción larga a la izquierda convive con tres bloques cortos apilados a la derecha. Los otros
+  tres anchos siguen empaquetándose en filas por pistas (`dos-tercios` + `un-tercio` comparten fila),
+  y cualquiera de ellos corta el flujo de columnas: la zona se cierra y la fila arranca abajo.
+  Consecuencia a tener presente al leer el HTML o escribir una prueba: **dentro de una zona de dos
+  columnas el orden del DOM no es el orden de los bloques** —el DOM va columna por columna—, y el
+  orden de lectura de la ficha lo da el array, no la maqueta.
 
 ---
 

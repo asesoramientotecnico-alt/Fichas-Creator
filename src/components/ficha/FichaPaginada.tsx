@@ -46,6 +46,7 @@ export default function FichaPaginada({
     setHojas(
       repartidas.map((h, i) => ({
         bloques: h.bloques,
+        regiones: h.regiones,
         alPie: h.alPie,
         ...(i > 0
           ? { titulo: tituloDeHoja(h.bloques, tituloInterior), antetitulo }

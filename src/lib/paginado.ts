@@ -129,70 +129,198 @@ export function tituloDeHoja(bloques: Bloque[], porOmision: string): string {
   return bloques.find((b) => b.tituloHoja)?.tituloHoja ?? porOmision;
 }
 
+/**
+ * Un tramo vertical de una hoja.
+ *
+ * `fila` es lo de siempre: uno o más bloques lado a lado, con la altura del más
+ * alto. `columnas` es el tramo donde dos columnas fluyen independientes — cada
+ * una apila sus bloques sin esperar a la otra, que es como están armadas las
+ * fichas de referencia. Con filas, un bloque corto al lado de uno largo deja un
+ * hueco del tamaño de la diferencia; con columnas ese hueco no existe.
+ */
+export type Region =
+  | { clase: "fila"; bloques: Bloque[]; alto: number }
+  | { clase: "columnas"; izquierda: Bloque[]; derecha: Bloque[]; alto: number };
+
+/** Los bloques de una región, en orden de lectura. */
+export function bloquesDeRegion(r: Region): Bloque[] {
+  return r.clase === "fila" ? r.bloques : [...r.izquierda, ...r.derecha];
+}
+
+/** Un bloque entra al flujo de dos columnas si ocupa exactamente media hoja. */
+function esDeColumna(b: Bloque): boolean {
+  // `filasGrilla` es una fila compuesta declarada a mano: se respeta como fila.
+  if (b.filasGrilla && b.filasGrilla > 1) return false;
+  return pistasDe(b) === PISTAS_GRILLA / 2;
+}
+
 export interface HojaRepartida {
+  /** Los tramos de la hoja, en orden. Es lo que dibuja la vista. */
+  regiones: Region[];
+  /** Los mismos bloques, aplanados en orden de lectura. */
   bloques: Bloque[];
   /** Bloques anclados al pie de la hoja (barra destacada). */
   alPie: Bloque[];
 }
 
 export function repartirEnHojas(bloques: Bloque[], m: Medidas): HojaRepartida[] {
-  // La barra destacada no fluye: se ancla al pie de la última hoja, como en
-  // las dos fichas de producción.
+  // La barra destacada no fluye: se ancla al pie de la última hoja, como en las
+  // fichas de referencia.
   const cuerpo = bloques.filter((b) => b.tipo !== "barra-destacada");
   const anclados = bloques.filter((b) => b.tipo === "barra-destacada");
 
-  const filas = agruparEnFilas(cuerpo, m.altoBloque, m.separacionFilas);
-
-  const capacidad = (esPrimera: boolean) =>
-    esPrimera ? m.altoUtilPrimera : m.altoUtilInterior;
+  const capacidad = (indiceHoja: number) =>
+    indiceHoja === 0 ? m.altoUtilPrimera : m.altoUtilInterior;
+  const alto = (b: Bloque) => m.altoBloque[b.id] ?? 0;
 
   const hojas: HojaRepartida[] = [];
-  let actual: Bloque[] = [];
+  /** Regiones ya cerradas de la hoja en curso, y lo que ocupan. */
+  let regiones: Region[] = [];
   let usado = 0;
+  /**
+   * Alto ocupado de la última hoja cerrada. Hace falta para decidir si los
+   * bloques anclados al pie entran: `usado` se reinicia al cerrar la hoja.
+   */
+  let usadoUltima = 0;
 
-  const abrir = () => {
-    actual = [];
+  /** Zona de dos columnas abierta. */
+  let izq: Bloque[] = [];
+  let der: Bloque[] = [];
+  let altoIzq = 0;
+  let altoDer = 0;
+  /** Fila abierta, para los bloques que no son de media hoja. */
+  let fila: { bloques: Bloque[]; alto: number; pistas: number } | null = null;
+
+  const hayZona = () => izq.length > 0 || der.length > 0;
+  const altoZona = () => Math.max(altoIzq, altoDer);
+  const abierto = () => hayZona() || fila !== null;
+  /** Separación que hay que pagar antes de una región más. */
+  const sep = () => (regiones.length > 0 ? m.separacionFilas : 0);
+
+  const cerrarAbierto = () => {
+    if (fila) {
+      usado += sep() + fila.alto;
+      regiones.push({ clase: "fila", bloques: fila.bloques, alto: fila.alto });
+      fila = null;
+      return;
+    }
+    if (!hayZona()) return;
+    usado += sep() + altoZona();
+    regiones.push({ clase: "columnas", izquierda: izq, derecha: der, alto: altoZona() });
+    izq = [];
+    der = [];
+    altoIzq = 0;
+    altoDer = 0;
+  };
+
+  const cerrarHoja = () => {
+    cerrarAbierto();
+    hojas.push({ regiones, bloques: regiones.flatMap(bloquesDeRegion), alPie: [] });
+    usadoUltima = usado;
+    regiones = [];
     usado = 0;
   };
-  const cerrar = () => {
-    hojas.push({ bloques: actual, alPie: [] });
-  };
 
-  abrir();
+  /** Si lo abierto midiera `nuevoAlto`, ¿se pasa de la hoja? */
+  const noEntra = (nuevoAlto: number) =>
+    usado + sep() + nuevoAlto > capacidad(hojas.length) && (regiones.length > 0 || abierto());
 
-  for (const fila of filas) {
-    const disponible = capacidad(hojas.length === 0);
-    const costo = fila.alto + (usado > 0 ? m.separacionFilas : 0);
+  for (let i = 0; i < cuerpo.length; i += 1) {
+    const b = cuerpo[i];
+    const h = alto(b);
+    const pistas = pistasDe(b);
 
-    // Una fila que no entra abre hoja nueva. Si tampoco entra en una hoja
-    // vacía, se deja igual: un bloque más alto que la hoja se recortaría, y
-    // moverlo a otra hoja no lo arreglaría — es un problema de contenido que
-    // hay que ver en el editor, no acá.
-    if (usado > 0 && usado + costo > disponible) {
-      cerrar();
-      abrir();
-      usado = fila.alto;
-    } else {
-      usado += costo;
+    // --- Fila compuesta declarada a mano: el bloque alto y, al costado, los
+    // que lo siguen apilados en las pistas que sobran. Es una decisión de
+    // maqueta explícita (§4 `filasGrilla`) y no entra al flujo de columnas.
+    const apiladas = b.filasGrilla && b.filasGrilla > 1 ? b.filasGrilla : 0;
+    if (apiladas) {
+      cerrarAbierto();
+      const sobran = PISTAS_GRILLA - pistas;
+      const costado: Bloque[] = [];
+      while (costado.length < apiladas && i + 1 < cuerpo.length) {
+        const siguiente = cuerpo[i + 1];
+        if (pistasDe(siguiente) > sobran) break;
+        costado.push(siguiente);
+        i += 1;
+      }
+      const altoCostado = costado.reduce(
+        (t, c, j) => t + alto(c) + (j > 0 ? m.separacionFilas : 0),
+        0,
+      );
+      const altoFila = Math.max(h, altoCostado);
+      if (noEntra(altoFila)) cerrarHoja();
+      usado += sep() + altoFila;
+      regiones.push({ clase: "fila", bloques: [b, ...costado], alto: altoFila });
+      continue;
     }
 
-    actual.push(...fila.bloques);
+    // --- Media hoja: entra al flujo de dos columnas.
+    if (pistas === PISTAS_GRILLA / 2) {
+      if (fila) cerrarAbierto();
+
+      /** Lo que mediría la zona si el bloque va a la columna más corta. */
+      const proyectada = () => {
+        const aIzquierda = altoIzq <= altoDer;
+        const actual = aIzquierda ? altoIzq : altoDer;
+        const cantidad = aIzquierda ? izq.length : der.length;
+        const columna = actual + h + (cantidad > 0 ? m.separacionFilas : 0);
+        return Math.max(columna, aIzquierda ? altoDer : altoIzq);
+      };
+
+      // No entra: se cierra la hoja y el bloque abre la zona de la siguiente.
+      // Si tampoco entra en una hoja vacía se deja igual: un bloque más alto
+      // que la hoja es un problema de contenido, no de reparto.
+      if (noEntra(proyectada())) cerrarHoja();
+
+      // La columna se elige DESPUÉS del corte: una hoja nueva arranca con las
+      // dos vacías.
+      if (altoIzq <= altoDer) {
+        altoIzq += h + (izq.length > 0 ? m.separacionFilas : 0);
+        izq.push(b);
+      } else {
+        altoDer += h + (der.length > 0 ? m.separacionFilas : 0);
+        der.push(b);
+      }
+      continue;
+    }
+
+    // --- El resto se empaqueta en filas por pistas, como la grilla con
+    // colocación automática: un tercio junto a dos tercios comparten fila.
+    if (hayZona()) cerrarAbierto();
+
+    if (fila && fila.pistas + pistas <= PISTAS_GRILLA) {
+      const altoFila = Math.max(fila.alto, h);
+      if (noEntra(altoFila)) {
+        // La fila ya abierta se va con la hoja; el bloque abre otra.
+        cerrarHoja();
+        fila = { bloques: [b], alto: h, pistas };
+      } else {
+        fila.bloques.push(b);
+        fila.alto = altoFila;
+        fila.pistas += pistas;
+      }
+    } else {
+      if (fila) cerrarAbierto();
+      if (noEntra(h)) cerrarHoja();
+      fila = { bloques: [b], alto: h, pistas };
+    }
+
+    if (fila && fila.pistas >= PISTAS_GRILLA) cerrarAbierto();
   }
 
-  cerrar();
+  cerrarHoja();
 
   if (anclados.length === 0) return hojas;
 
   // Los anclados van al pie de la última hoja si entran; si no, a una nueva.
-  const altoAnclados =
-    anclados.reduce((t, b) => t + (m.altoBloque[b.id] ?? 0), 0) + m.separacionPie;
+  const altoAnclados = anclados.reduce((t, b) => t + alto(b), 0) + m.separacionPie;
   const ultima = hojas[hojas.length - 1];
-  const disponible = capacidad(hojas.length === 1);
 
-  if (usado + altoAnclados <= disponible) {
+  if (usadoUltima + altoAnclados <= capacidad(hojas.length - 1)) {
     ultima.alPie = anclados;
   } else {
-    hojas.push({ bloques: [], alPie: anclados });
+    hojas.push({ regiones: [], bloques: [], alPie: anclados });
   }
 
   return hojas;
