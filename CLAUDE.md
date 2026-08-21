@@ -71,12 +71,31 @@ variable `NEXT_PUBLIC_*`.
 
 ## 3. Fuente de verdad estética
 
-La fuente única de verdad visual es `referencia/Plantilla ficha tecnica FAMIQ V26.pdf` — la plantilla
-"Válvula esférica 3 cuerpos Socket Weld", de 3 páginas A4. Reemplazó al HTML/CSS original de
-`templates/ficha-tecnica/`, que queda como referencia histórica. El cambio, lo que revirtió y lo que
-rompió están en `docs/rediseno-plantilla-v26.md`.
+La fuente única de verdad visual son las dos fichas de `referencia/nuevas/` — "Disco de corte SG
+Steelox" y "Arandela plana unificada SAE", armadas en agosto de 2026. Reemplazaron a
+`referencia/Plantilla ficha tecnica FAMIQ V26.pdf`, que a su vez había reemplazado al HTML/CSS
+original de `templates/ficha-tecnica/`. Las dos anteriores quedan como referencia histórica; el
+cambio a la V26 y lo que rompió siguen en `docs/rediseno-plantilla-v26.md`.
 
-Los valores de `src/components/ficha/ficha.css` se miden sobre ese PDF: geometría, tamaños de
+> **Cambio de referencia, agosto 2026.** La V26 gobernaba la maqueta hasta que Oficina Técnica armó
+> fichas nuevas con una cabecera mucho más compacta y las declaró el modelo a seguir. Lo que cambió,
+> medido de las dos fichas nuevas y no a ojo:
+>
+> | | V26 | Fichas nuevas |
+> |---|---|---|
+> | Retiro superior de la primera hoja | 26,2 mm | 11,9 mm |
+> | Ancho del logo | 42,2 mm | 51,3 mm |
+> | Ancho de la píldora | 74,9 mm | 41 mm |
+> | Grosor de la regla del rótulo | 1 px | 3 px (2,25 pt) |
+> | Cuerpo del título | 28 pt | 26 pt |
+> | Primera regla de sección | y = 106 mm | y = 78,6 mm |
+>
+> Son 27 mm de hoja que la cabecera le devuelve al contenido. El resto de la maqueta —las dos
+> columnas de 87,6 mm con canal de 9 mm, los rótulos de sección, las tablas, el pie— ya coincidía y
+> no se tocó. La verificación se hace midiendo hito por hito contra las dos fichas: el ajuste final
+> quedó dentro de 1,3 mm en todos.
+
+Los valores de `src/components/ficha/ficha.css` se miden sobre esos PDF: geometría, tamaños de
 tipografía, colores y tracking. No se ajustan a ojo. No rediseñar, no "mejorar" el diseño, no cambiar
 spacing ni tipografías. Si un valor parece raro, dejarlo como está y anotarlo.
 
@@ -131,6 +150,12 @@ Variantes, que no son tipos nuevos:
 - `texto-rico` con `columnas: 2`: los párrafos se reparten en dos columnas dentro del ancho del
   bloque, con el rótulo arriba a ancho completo. Sirve para una descripción larga que a ancho
   completo deja renglones de más de cien caracteres.
+- `texto-rico` con `vinetas: true`: cada párrafo lleva una viñeta roja, para una enumeración corta
+  tipo "Ventajas" donde cada línea es un ítem y no prosa corrida. Se combina con `columnas`. El
+  color, el tamaño y la sangría de la viñeta los fija `ficha.css`.
+- `header` con `serie`: la gama comercial en versales rojas debajo del título — "STEELOX SENSITIVA".
+  Va aparte de `subtituloEn`, que es la traducción del nombre y se compone en itálica gris: son dos
+  cosas distintas y una ficha puede llevar las dos.
 - `croquis` e `imagen` con `marcas`: símbolos colocados ENCIMA de la imagen, en el punto que miden.
   Las coordenadas van en porcentaje de la caja de la imagen, no en píxeles, así la marca cae en el
   mismo punto del dibujo en pantalla, en el PDF y con el bloque a un tercio o a ancho completo. Se
@@ -336,7 +361,9 @@ Supabase. CRUD de producto y ficha. Sin editor de bloques, sin IA, sin PDF.
 ### M2 — Render
 Template portado a componentes React por tipo de bloque. Vista de ficha en pantalla, pixel-fiel al
 HTML original. Datos hardcodeados o desde DB.
-*Aceptación:* la plantilla V26 renderizada es indistinguible del original en captura.
+*Aceptación:* la ficha renderizada es indistinguible de las de `referencia/nuevas/`, medida hito por
+hito. El criterio decía "indistinguible de la plantilla V26" y caducó cuando cambió la referencia
+(§3): la cabecera es deliberadamente distinta.
 
 ### M3 — Editor y revisiones
 Editor de bloques (agregar, reordenar, eliminar, editar campos). Cada guardado crea una revisión.

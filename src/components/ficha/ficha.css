@@ -38,9 +38,12 @@
   flex-direction: column;
 }
 
-/* La primera hoja abre con más aire: el logo grande necesita respiro. */
+/* La primera hoja arranca más arriba que las interiores, pero mucho menos de
+   lo que pedía la V26: medido en las fichas nuevas de referencia, el logo
+   apoya a 11,9 mm del borde. Los 26,2 mm anteriores gastaban 14 mm de hoja en
+   aire, que es media sección. */
 .hoja[data-primera="true"] {
-  --hoja-padding-top: 26.2mm;
+  --hoja-padding-top: 11.9mm;
 }
 
 /* En pantalla las hojas se ven como tarjetas apiladas. */
@@ -61,21 +64,27 @@
 }
 
 .ficha-cabecera .logo {
-  /* Ancho medido de la tinta del logo en el PDF, no de su caja. */
-  width: 42.2mm;
+  /* Ancho medido de la tinta del logo en las fichas de referencia: 145,5 pt.
+     Apoya en el borde superior del área de contenido, sin desplazamiento. */
+  width: 51.3mm;
   height: auto;
   display: block;
-  margin-top: 2mm;
 }
 
 .ficha-cabecera .marca-negocio {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  /* La píldora arranca 2,4 mm más abajo que el logo, medido de las fichas de
+     referencia. */
+  margin-top: 2.4mm;
 }
 
+/* 41 mm: es el promedio de las dos fichas de referencia (114,8 y 120 pt), que
+   traen píldoras con proporciones distintas. La V26 la usaba a 74,9 mm, casi el
+   doble, y se comía el ancho de la cabecera. */
 .ficha-cabecera .pildora {
-  width: 74.9mm;
+  width: 41mm;
   height: auto;
   display: block;
 }
@@ -100,10 +109,14 @@
   display: flex;
   align-items: baseline;
   gap: 4.8mm;
-  margin-top: 15mm;
+  /* Pegado al bloque de la marca: en las fichas de referencia el rótulo cae
+     apenas debajo del logo, no a 15 mm. Medido: 1,6 mm. */
+  margin-top: 1.6mm;
   padding-bottom: 1.5mm;
-  /* Tramo gris de la regla: el rojo lo pone el rótulo con su propio borde. */
-  border-bottom: 1px solid var(--famiq-grey-200);
+  /* Tramo gris de la regla: el rojo lo pone el rótulo con su propio borde.
+     3px = 2,25 pt, el grosor medido; con 1px la regla se veía tres veces más
+     fina que en la referencia. */
+  border-bottom: 3px solid var(--famiq-grey-200);
 }
 
 .ficha-rotulo .rotulo {
@@ -120,7 +133,7 @@
   padding-right: 3mm;
   padding-bottom: 1.5mm;
   margin-bottom: -1.5mm;
-  border-bottom: 1px solid var(--famiq-red);
+  border-bottom: 3px solid var(--famiq-red);
 }
 
 .ficha-rotulo .identificacion {
@@ -335,12 +348,28 @@
 .bloque-header h1 {
   font-family: var(--font-condensed);
   font-weight: 700;
-  font-size: 28pt;
+  /* 26 pt medido en las fichas nuevas. Con los 28 pt de la V26, "Disco de
+     corte SG Steelox" se partía en dos renglones. */
+  font-size: 26pt;
   line-height: 1.01;
   letter-spacing: 0;
   margin: 0;
   color: var(--famiq-graphite);
   text-wrap: balance;
+}
+
+/* Serie del producto, en versales rojas debajo del título. Medido en la ficha
+   del disco: 10 pt, rojo oscuro, con el mismo tracking que los rótulos de
+   sección. Es la gama comercial, no la traducción del nombre. */
+.bloque-header .serie {
+  font-family: var(--font-condensed);
+  font-weight: 700;
+  font-size: 10pt;
+  line-height: 1.2;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--famiq-red-dark);
+  margin: 2.2mm 0 0;
 }
 
 .bloque-header .nombre-en {
@@ -358,7 +387,9 @@
   align-items: center;
   justify-content: flex-end;
   width: 100%;
-  height: 34.3mm;
+  /* 32 mm de alto: en las fichas de referencia la foto mide 90,8 pt y apoya al
+     costado del título, sin dominarlo. */
+  height: 32mm;
 }
 
 .bloque-header .foto img {

@@ -120,6 +120,16 @@ export interface BloqueHeader extends BloqueBase {
   subfamilia: string;
   tituloEs: string;
   subtituloEn?: string;
+  /**
+   * Serie o línea del producto, en rojo debajo del título. En la ficha del
+   * disco es "STEELOX SENSITIVA".
+   *
+   * Va aparte de `subtituloEn` porque son dos cosas: el subtítulo en inglés es
+   * la traducción del nombre y se compone en itálica gris, y la serie es la
+   * gama comercial y se compone en versales rojas. La V26 sólo usaba el
+   * primero; las fichas nuevas de referencia usan el segundo.
+   */
+  serie?: string;
   fotoAssetId?: string;
   /** Tamaño de la foto dentro de su caja. Ver `EscalaImagen`. */
   escalaImagen?: EscalaImagen;

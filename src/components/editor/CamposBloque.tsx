@@ -269,6 +269,12 @@ export default function CamposBloque({
           <Texto etiqueta="Subfamilia" valor={bloque.subfamilia} onChange={(v) => set({ subfamilia: v })} />
           <Texto etiqueta="Título (castellano)" valor={bloque.tituloEs} onChange={(v) => set({ tituloEs: v })} />
           <Texto etiqueta="Subtítulo (inglés)" valor={bloque.subtituloEn ?? ""} onChange={(v) => set({ subtituloEn: v })} />
+          <Texto
+            etiqueta="Serie (en rojo debajo del título)"
+            valor={bloque.serie ?? ""}
+            placeholder="Steelox sensitiva"
+            onChange={(v) => set({ serie: v || undefined })}
+          />
           <Opcion
             etiqueta="Unidad de negocio"
             valor={bloque.pildoraAssetId ?? ""}

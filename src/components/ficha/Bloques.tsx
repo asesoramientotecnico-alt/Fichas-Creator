@@ -127,6 +127,7 @@ export function Header({ bloque, fotoSrc }: { bloque: BloqueHeader; fotoSrc?: st
       data-escala={escalaDe(bloque)}>
       <div>
         <h1>{bloque.tituloEs}</h1>
+        {bloque.serie ? <p className="serie">{bloque.serie}</p> : null}
         {bloque.subtituloEn ? <p className="nombre-en">{bloque.subtituloEn}</p> : null}
       </div>
       {fotoSrc ? (
