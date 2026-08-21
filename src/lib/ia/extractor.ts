@@ -200,6 +200,8 @@ Tu tarea es MECÁNICA: pasar lo que está escrito en el PDF a la estructura. No 
 # Cómo elegir el tipo de bloque
 
 - header: el título del producto. UNO por ficha, SIEMPRE el primero. Llená "tituloEs", "subtituloEn" (si hay nombre en inglés), "familia" y "subfamilia" (la clasificación que suele ir arriba a la derecha o bajo el título) y "alt" describiendo la foto de producto.
+  Arriba de todo la ficha suele traer dos líneas de clasificación numeradas —una con el número de familia y su nombre en mayúsculas, y debajo la subfamilia con número decimal—: la primera va en "familia" y la segunda en "subfamilia". Más abajo van el título grande y, más chico, su nombre en inglés: ESOS son "tituloEs" y "subtituloEn".
+  El título grande puede NO coincidir con la subfamilia, y pasa: son cuatro campos distintos y cada uno lleva la línea que le toca por su lugar en la hoja. No pises "tituloEs" con la subfamilia porque te parezca que se corresponden mejor, que eso es corregir (regla 2). Y el título y su nombre en inglés van SÓLO en el header: no armes además un texto-rico ni un inline-kv con ellos. Las cuatro líneas quedan transcriptas en el header, así que ninguna va a "omitido".
 - texto-rico: párrafos de prosa bajo un título de sección ("Descripción", "Aplicación", "Ventajas", "Características"). Cada viñeta o párrafo del PDF es un elemento de "lineas".
 - tabla-kv: lista de etiqueta → valor, una por línea ("Datos técnicos", "Normas aplicables"). Va en "pares": "izquierda" es el rótulo, "derecha" el valor. Usá orientacion "vertical" sólo si en el PDF el rótulo está ARRIBA del valor en una columna angosta; si está a la izquierda, "horizontal".
 - tabla: tabla con encabezados de columna y varias filas. Llená "columnas" y "filas" (una fila es un array de celdas, en el mismo orden que las columnas).
@@ -218,7 +220,14 @@ Tu tarea es MECÁNICA: pasar lo que está escrito en el PDF a la estructura. No 
 
 La hoja es una grilla de 12 pistas. "completo" (12) ocupa todo el ancho; "medio" (6) media hoja; "dos-tercios" (8) y "un-tercio" (4) para una figura ancha con secciones angostas al costado.
 
-Reglas: el header siempre "completo". Una tabla de muchas columnas, "completo". Dos secciones que en el PDF están lado a lado, "medio" cada una. Una sección corta que en el PDF ocupa toda la línea, "completo".
+El ancho lo decide la MAQUETA del PDF, no el largo del texto. Mirá a qué ALTURA de la hoja está el rótulo de cada sección:
+
+- Dos rótulos a la misma altura, uno a la izquierda y otro a la derecha → las dos secciones van "medio".
+- Un rótulo solo en su altura, con su contenido llegando al margen derecho → "completo".
+- Una figura ancha con secciones angostas al costado → "dos-tercios" y "un-tercio".
+- El header siempre "completo". Una tabla de muchas columnas, "completo".
+
+Antes de cerrar la respuesta, contá cuántos bloques te quedaron en "completo". Si te quedaron TODOS, volvé a mirar la hoja: una ficha en la que ninguna sección comparte altura con otra existe, pero es raro, y una transcripción que aplasta dos columnas en una pila no se parece al PDF que le mostraste a la persona.
 
 # Imágenes
 

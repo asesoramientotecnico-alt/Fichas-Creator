@@ -272,6 +272,24 @@ Modelo: `ANTHROPIC_MODELO_EXTRACCION`, y si no está, el mismo del revisor. Medi
 del disco (una hoja, 3 imágenes) ~35 s y ~6.100 tokens de entrada; la plantilla V26 (tres hojas, 5
 imágenes) ~37 s y ~10.700. El tamaño del PDF pesa menos que la cantidad de bloques a emitir.
 
+Medido sobre las cuatro fichas de `referencia/nuevas/`, que son las que hoy fijan la estética (§3):
+clavos ~14 s / 6.500 tokens, arandela SAE ~18 s / 8.300, arandela Grower ~20 s / 8.700, válvula
+esférica ~32 s / 11.300. Dos cosas que ese ensayo dejó a la vista y que están corregidas en el
+prompt:
+
+- **La cabecera tiene cuatro campos y hay que respetar los cuatro.** El título grande puede no
+  coincidir con la línea de clasificación de arriba —una ficha titulada "Clavos" dentro de la
+  subfamilia de remaches es un caso real del catálogo—, y el modelo pisaba `tituloEs` con la
+  subfamilia "porque se correspondían mejor". Eso es corregir, que es la regla 3.
+- **El ancho lo decide la maqueta, no el largo del texto.** Sin instrucción explícita el modelo
+  devolvía la ficha entera en `completo`, que aplasta dos columnas en una pila. Ahora la regla es
+  mirar a qué ALTURA de la hoja está cada rótulo: dos rótulos a la misma altura son dos bloques
+  `medio`. El ancho es un campo de presentación, así que insistir sobre él no roza la regla 2.
+
+Un detalle a tener presente al leer el prompt: los ejemplos que lleva **no pueden ser literales**.
+Con la subfamilia de remaches citada entre comillas como ejemplo, el modelo la copió al `omitido` de
+la ficha de la válvula, donde esa línea no existe. Los ejemplos van descriptos, nunca entre comillas.
+
 ---
 
 ## 5. Modelo de datos
@@ -409,7 +427,7 @@ familia. Bloque `chart`.
 | La transcripción del PDF mete un dato que el PDF no dice | §4bis reglas 2 y 3. La transcripción no se guarda: queda en el editor para revisar. `scripts/extractor.test.ts` cubre el descarte de bloques vacíos |
 | Se confía en la transcripción y nadie la revisa | El estado nace `borrador`, así que el PDF sale con marca de agua hasta que alguien lo apruebe (§5 invariante 4). Lo no transcripto se muestra en pantalla, no en un log |
 | La extracción de una ficha de tres hojas no entra en los 60 s de Vercel Hobby | Medido: una hoja ~35 s, tres hojas ~37 s. Entra, pero con poco margen. Si una ficha lo pasa, partir el PDF o mover la extracción a un trabajo asincrónico — no subir `maxDuration` a ciegas |
-| El filtro de imágenes deja pasar cromo (un logo, una píldora) y ensucia la librería de la familia | Sólo se sube lo que el modelo asigna a un bloque. Lo que sobrevive al filtro y no se usa se informa en pantalla. `scripts/imagenes-pdf.test.ts` fija el filtro contra las dos fichas de `referencia/` |
+| El filtro de imágenes deja pasar cromo (un logo, una píldora) y ensucia la librería de la familia | Sólo se sube lo que el modelo asigna a un bloque. Lo que sobrevive al filtro y no se usa se informa en pantalla. `scripts/imagenes-pdf.test.ts` fija el filtro contra las fichas de `referencia/` y de `referencia/nuevas/` |
 | La misma imagen se sube una vez por ficha y la librería de §7 queda inservible | Deduplicación por hash del contenido en el nombre del archivo. Un E2E carga el mismo PDF en dos fichas y verifica que el assetId es el mismo |
 | El modelo asigna una imagen al bloque equivocado | Elige de un inventario cerrado, así que el error posible es de emparejamiento, no de invención: la imagen existe y está en la ficha, sólo en el bloque de al lado. Se ve en el preview y se cambia con el selector de assets del editor |
 | El recorte de una figura arrastra texto vecino que cae dentro de su rectángulo | Es el comportamiento buscado: los rótulos de la escala de dureza son parte de la figura y no del bitmap. El riesgo es un rectángulo que se solape con texto ajeno; se ve en el preview y el bloque se puede dejar sin imagen |

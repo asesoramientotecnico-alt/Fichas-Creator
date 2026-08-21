@@ -1,12 +1,18 @@
 /**
  * Pruebas de la extracción de imágenes de un PDF (§4bis). Corren contra los
- * dos PDFs de `referencia/`, que son fichas reales: el filtro de cromo se
- * calibró sobre ellas y esta prueba es lo que impide que se descalibre.
+ * PDFs de `referencia/`, que son fichas reales: el filtro de cromo se calibró
+ * sobre las dos primeras y esta prueba es lo que impide que se descalibre.
+ * Las de `referencia/nuevas/` se agregaron después, cuando pasaron a ser la
+ * fuente de verdad estética (§3), y cubren tres casos que las otras dos no
+ * tenían: una ficha de una sola hoja —donde la repetición no puede delatar al
+ * logo—, la píldora de unidad de negocio que sobrevive al filtro a propósito,
+ * y una ficha de tres hojas con figura en cada una.
  *
  * Uso: tsx scripts/imagenes-pdf.test.ts
  */
 import { readFileSync } from "node:fs";
 import {
+  analizarImagenes,
   describirImagen,
   imagenesDePdf,
   inventarioParaModelo,
@@ -18,6 +24,9 @@ const chk = (n: string, f: () => boolean | Promise<boolean>) => casos.push([n, f
 
 const DISCO = "referencia/Ficha Tecnica - Disco de corte SG Steelox.pdf";
 const V26 = "referencia/Plantilla ficha tecnica FAMIQ V26.pdf";
+const CLAVOS = "referencia/nuevas/Clavos.pdf";
+const GROWER = "referencia/nuevas/Arandela Grower.pdf";
+const VALVULA = "referencia/nuevas/Valvula esferica.pdf";
 
 const pdf = (ruta: string) => new Uint8Array(readFileSync(ruta));
 
@@ -179,6 +188,46 @@ chk("la descripción de una imagen sin asignar dice dónde estaba", async () => 
   const ims = await imagenes(DISCO);
   const d = describirImagen(ims[0]);
   return d.startsWith("imagen1 (hoja 1,") && d.includes("px)");
+});
+
+// ------------------------------------------------------------
+// Las fichas nuevas: el filtro contra la maqueta que hoy es la referencia
+// ------------------------------------------------------------
+
+chk("clavos: una sola hoja, las 2 figuras quedan y no se descarta nada", async () => {
+  // Con una hoja, la repetición no puede delatar al logo, y las otras tres
+  // señales no tienen por qué disparar: acá el encabezado es texto, no un
+  // bitmap. Que no descarte nada es lo correcto, no una falla del filtro.
+  const { contenido, descartadas } = await analizarImagenes(pdf(CLAVOS));
+  return contenido.length === 2 && descartadas.length === 0;
+});
+
+chk("clavos: la foto de producto y el croquis quedan los dos, a la izquierda", async () => {
+  const ims = await imagenes(CLAVOS);
+  return ims[0].posicion === "arriba a la izquierda" &&
+         ims[1].posicion === "al medio a la izquierda";
+});
+
+chk("grower: el logo se descarta por repetirse y la píldora sobrevive", async () => {
+  // La píldora de unidad de negocio pasa el filtro a propósito: bajar el umbral
+  // para llevársela dejaría entrar basura. Sale del catálogo fijo de la app, así
+  // que el modelo no la asigna y se informa como no transcripta (§4bis regla 4).
+  const { contenido, descartadas } = await analizarImagenes(pdf(GROWER));
+  return contenido.length === 3 && descartadas.length === 1 &&
+         descartadas[0].motivo.includes("todas las hojas") &&
+         contenido.some((im) => im.altoOrigenPx < 150 && im.anchoOrigenPx > 300);
+});
+
+chk("valvula: tres hojas, y cada una aporta al menos una figura", async () => {
+  const ims = await imagenes(VALVULA);
+  const hojas = new Set(ims.map((im) => im.hoja));
+  return ims.length === 5 && hojas.has(1) && hojas.has(2) && hojas.has(3);
+});
+
+chk("valvula: el despiece de la hoja 2 es la figura más ancha", async () => {
+  const ims = await imagenes(VALVULA);
+  const mayor = [...ims].sort((a, b) => b.anchoOrigenPx - a.anchoOrigenPx)[0];
+  return mayor.hoja === 2 && mayor.posicion === "arriba al centro";
 });
 
 async function correr() {
